@@ -1,0 +1,512 @@
+// Churrasco Nobre — modelo de dados (instalação única).
+// Dinheiro em centavos (Int); quantidades em milésimos da unidade (Int: 1,5 kg = 1500).
+// Regras críticas também existem no banco (CHECKs e triggers) — veja prisma/migrations.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum EntryKind {
+  INCOME
+  EXPENSE
+}
+
+enum EntryStatus {
+  PAID
+  PENDING
+  CANCELED
+}
+
+enum EntrySource {
+  MANUAL
+  PURCHASE
+  ORDER
+}
+
+enum StockDirection {
+  IN
+  OUT
+}
+
+enum StockReason {
+  PURCHASE
+  CONSUMPTION
+  SALE
+  LOSS
+  ADJUSTMENT
+  REVERSAL
+}
+
+enum PurchaseStatus {
+  RECEIVED
+  CANCELED
+}
+
+enum OrderStatus {
+  OPEN
+  PAID
+  CANCELED
+}
+
+enum OrderChannel {
+  TABLE
+  COUNTER
+  DELIVERY
+  CATERING
+}
+
+// ───────────────────────── Sistema e fornecedor ─────────────────────────
+
+/// Configuração única da instalação, controlada pelo console do fornecedor.
+model SystemSettings {
+  id             String    @id @default("singleton")
+  companyName    String    @default("Churrasco Nobre") @map("company_name")
+  blocked        Boolean   @default(false)
+  blockMessage   String?   @map("block_message")
+  blockedAt      DateTime? @map("blocked_at") @db.Timestamptz(6)
+  /// Módulos liberados para a empresa (lista de chaves).
+  enabledModules Json      @map("enabled_modules")
+  /// Vencimento da licença: depois desta data o acesso é bloqueado automaticamente.
+  expiresOn      DateTime? @map("expires_on") @db.Date
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_settings")
+}
+
+model PlatformAdmin {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  active             Boolean   @default(true)
+  /// Conta master (criada no primeiro start): protegida contra desativação e exclusão.
+  isMaster           Boolean   @default(false) @map("is_master")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  failedAttempts     Int       @default(0) @map("failed_attempts")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions PlatformSession[]
+  events   PlatformEvent[]
+
+  @@map("platform_admins")
+}
+
+model PlatformSession {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String    @map("admin_id") @db.Uuid
+  /// SHA-256 (hex) do token; o token em si nunca é gravado.
+  tokenHash  String    @unique @map("token_hash")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  ip         String?
+  userAgent  String?   @map("user_agent")
+
+  admin PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("platform_sessions")
+}
+
+/// Histórico do console: bloqueios, liberações, módulos, vencimento, administradores.
+model PlatformEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId   String?  @map("admin_id") @db.Uuid
+  adminName String   @map("admin_name")
+  action    String
+  message   String
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  admin PlatformAdmin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("platform_events")
+}
+
+// ───────────────────────── Usuários e acesso ─────────────────────────
+
+/// Perfil de acesso: nível por módulo ({ "FINANCEIRO": "EDIT", "PEDIDOS": "VIEW" }; ausente = sem acesso).
+model AccessProfile {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  permissions Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  users User[]
+
+  @@map("access_profiles")
+}
+
+model User {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  /// ADMIN = administrador da empresa (todos os módulos liberados); STAFF = usuário (segue o perfil de acesso).
+  role               UserRole  @default(STAFF)
+  accessProfileId    String?   @map("access_profile_id") @db.Uuid
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  failedAttempts     Int       @default(0) @map("failed_attempts")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(6)
+  passwordChangedAt  DateTime? @map("password_changed_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  accessProfile AccessProfile?   @relation(fields: [accessProfileId], references: [id], onDelete: SetNull)
+  sessions      UserSession[]
+  resets        PasswordReset[]
+  auditLogs     AuditLog[]
+  entries       FinancialEntry[] @relation("EntryCreatedBy")
+  purchases     Purchase[]       @relation("PurchaseCreatedBy")
+  orders        Order[]          @relation("OrderCreatedBy")
+  movements     StockMovement[]
+
+  @@map("users")
+}
+
+model UserSession {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  ip         String?
+  userAgent  String?   @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+/// Contadores de tentativas (login, recuperação de senha) por IP e por conta.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now()) @map("window_start") @db.Timestamptz(6)
+
+  @@map("rate_limits")
+}
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  /// Quem fez (e-mail ou nome), guardado também para tentativas sem usuário válido.
+  actor     String?
+  /// "entidade.verbo", ex.: "financeiro.criou", "auth.login_falhou".
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  data      Json?
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ───────────────────────── Cadastros ─────────────────────────
+
+model FinancialCategory {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  kind      EntryKind
+  active    Boolean   @default(true)
+  /// Categorias do sistema (vendas, compras) não podem ser renomeadas nem desativadas.
+  isSystem  Boolean   @default(false) @map("is_system")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  entries   FinancialEntry[]
+  purchases Purchase[]
+
+  @@unique([kind, name])
+  @@map("financial_categories")
+}
+
+model PaymentMethod {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  entries   FinancialEntry[]
+  purchases Purchase[]
+  orders    Order[]
+
+  @@map("payment_methods")
+}
+
+model Supplier {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  phone     String?
+  document  String?
+  note      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  purchases Purchase[]
+  entries   FinancialEntry[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  phone     String?
+  note      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  orders  Order[]
+  entries FinancialEntry[]
+
+  @@map("customers")
+}
+
+/// Item de compra (insumo), de venda (produto do cardápio) ou ambos (ex.: bebidas).
+model Item {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  code          String?
+  /// Unidade de medida: un, kg, g, L, ml, cx, pct, fardo, porção…
+  unit          String   @default("un")
+  /// Grupo livre para organizar (Carnes, Bebidas, Acompanhamentos…).
+  groupName     String?  @map("group_name")
+  purchasable   Boolean  @default(true)
+  sellable      Boolean  @default(false)
+  /// Quando ligado, compras e consumo movimentam o saldo; vendas também baixam o saldo.
+  trackStock    Boolean  @default(true) @map("track_stock")
+  /// Último custo por unidade (atualizado a cada compra).
+  costCents     Int      @default(0) @map("cost_cents")
+  /// Preço de venda por unidade.
+  priceCents    Int      @default(0) @map("price_cents")
+  /// Saldo atual em milésimos; mantido pelo banco a cada movimentação.
+  stockQtyMilli Int      @default(0) @map("stock_qty_milli")
+  minStockMilli Int      @default(0) @map("min_stock_milli")
+  active        Boolean  @default(true)
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  movements     StockMovement[]
+  purchaseItems PurchaseItem[]
+  orderItems    OrderItem[]
+
+  @@index([name])
+  @@map("items")
+}
+
+// ───────────────────────── Financeiro ─────────────────────────
+
+model FinancialEntry {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind            EntryKind
+  /// PAID = já recebido/pago; PENDING = a receber/a pagar (a data é o vencimento); CANCELED = cancelado.
+  status          EntryStatus @default(PAID)
+  description     String
+  amountCents     Int         @map("amount_cents")
+  date            DateTime    @db.Date
+  categoryId      String      @map("category_id") @db.Uuid
+  paymentMethodId String?     @map("payment_method_id") @db.Uuid
+  supplierId      String?     @map("supplier_id") @db.Uuid
+  customerId      String?     @map("customer_id") @db.Uuid
+  note            String?
+  source          EntrySource @default(MANUAL)
+  purchaseId      String?     @unique @map("purchase_id") @db.Uuid
+  orderId         String?     @unique @map("order_id") @db.Uuid
+  createdById     String?     @map("created_by_id") @db.Uuid
+  canceledAt      DateTime?   @map("canceled_at") @db.Timestamptz(6)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category      FinancialCategory @relation(fields: [categoryId], references: [id])
+  paymentMethod PaymentMethod?    @relation(fields: [paymentMethodId], references: [id])
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  createdBy     User?             @relation("EntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  purchase      Purchase?         @relation(fields: [purchaseId], references: [id])
+  order         Order?            @relation(fields: [orderId], references: [id])
+
+  @@index([date])
+  @@index([kind, status, date])
+  @@index([categoryId])
+  @@map("financial_entries")
+}
+
+// ───────────────────────── Compras e estoque ─────────────────────────
+
+model Purchase {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  number          Int            @unique @default(autoincrement())
+  date            DateTime       @db.Date
+  supplierId      String?        @map("supplier_id") @db.Uuid
+  categoryId      String         @map("category_id") @db.Uuid
+  paymentMethodId String?        @map("payment_method_id") @db.Uuid
+  status          PurchaseStatus @default(RECEIVED)
+  /// false = a pagar (vence em `dueDate`).
+  paid            Boolean        @default(true)
+  dueDate         DateTime?      @map("due_date") @db.Date
+  totalCents      Int            @map("total_cents")
+  invoiceNumber   String?        @map("invoice_number")
+  note            String?
+  createdById     String?        @map("created_by_id") @db.Uuid
+  canceledAt      DateTime?      @map("canceled_at") @db.Timestamptz(6)
+  cancelReason    String?        @map("cancel_reason")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  category      FinancialCategory @relation(fields: [categoryId], references: [id])
+  paymentMethod PaymentMethod?    @relation(fields: [paymentMethodId], references: [id])
+  createdBy     User?             @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items         PurchaseItem[]
+  entry         FinancialEntry?
+  movements     StockMovement[]
+
+  @@index([date])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseId    String @map("purchase_id") @db.Uuid
+  itemId        String @map("item_id") @db.Uuid
+  qtyMilli      Int    @map("qty_milli")
+  unitCostCents Int    @map("unit_cost_cents")
+  totalCents    Int    @map("total_cents")
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id])
+
+  @@index([purchaseId])
+  @@index([itemId])
+  @@map("purchase_items")
+}
+
+/// Livro-razão do estoque: movimentações são imutáveis (correções entram como novos lançamentos).
+model StockMovement {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId        String         @map("item_id") @db.Uuid
+  direction     StockDirection
+  reason        StockReason
+  qtyMilli      Int            @map("qty_milli")
+  unitCostCents Int?           @map("unit_cost_cents")
+  occurredAt    DateTime       @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  note          String?
+  purchaseId    String?        @map("purchase_id") @db.Uuid
+  orderId       String?        @map("order_id") @db.Uuid
+  createdById   String?        @map("created_by_id") @db.Uuid
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  purchase  Purchase? @relation(fields: [purchaseId], references: [id])
+  order     Order?    @relation(fields: [orderId], references: [id])
+  createdBy User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([itemId, occurredAt(sort: Desc)])
+  @@index([occurredAt(sort: Desc)])
+  @@map("stock_movements")
+}
+
+// ───────────────────────── Pedidos ─────────────────────────
+
+model Order {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  number          Int          @unique @default(autoincrement())
+  channel         OrderChannel @default(TABLE)
+  status          OrderStatus  @default(OPEN)
+  /// Mesa ou comanda.
+  tableLabel      String?      @map("table_label")
+  customerId      String?      @map("customer_id") @db.Uuid
+  customerName    String?      @map("customer_name")
+  phone           String?
+  address         String?
+  /// Data/hora combinada (entrega ou encomenda).
+  scheduledFor    DateTime?    @map("scheduled_for") @db.Timestamptz(6)
+  note            String?
+  discountCents   Int          @default(0) @map("discount_cents")
+  totalCents      Int          @default(0) @map("total_cents")
+  paymentMethodId String?      @map("payment_method_id") @db.Uuid
+  paidAt          DateTime?    @map("paid_at") @db.Timestamptz(6)
+  canceledAt      DateTime?    @map("canceled_at") @db.Timestamptz(6)
+  createdById     String?      @map("created_by_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer      Customer?       @relation(fields: [customerId], references: [id])
+  paymentMethod PaymentMethod?  @relation(fields: [paymentMethodId], references: [id])
+  createdBy     User?           @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  entry         FinancialEntry?
+  movements     StockMovement[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  itemId         String  @map("item_id") @db.Uuid
+  /// Nome e unidade no momento do pedido (o histórico não muda se o item for renomeado).
+  name           String
+  unit           String
+  qtyMilli       Int     @map("qty_milli")
+  unitPriceCents Int     @map("unit_price_cents")
+  totalCents     Int     @map("total_cents")
+  note           String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@index([orderId])
+  @@index([itemId])
+  @@map("order_items")
+}

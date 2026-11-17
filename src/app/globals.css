@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+
+  /* Identidade da marca (extraída da logo): bordô da chama e das letras, dourado do garfo, creme do fundo */
+  --color-brand-50: #fbf1ee;
+  --color-brand-100: #f6dfd9;
+  --color-brand-200: #ecbfb4;
+  --color-brand-300: #dd9486;
+  --color-brand-400: #c4604f;
+  --color-brand-500: #a3342a;
+  --color-brand-600: #8a1a14;
+  --color-brand-700: #6f1310;
+  --color-brand-800: #570e0d;
+  --color-brand-900: #40090a;
+  --color-brand-950: #250505;
+
+  --color-gold-50: #fbf6ea;
+  --color-gold-100: #f5e9c8;
+  --color-gold-200: #ebd397;
+  --color-gold-300: #dfba66;
+  --color-gold-400: #d1a24b;
+  --color-gold-500: #c38f46;
+  --color-gold-600: #a67632;
+  --color-gold-700: #82592a;
+
+  /* creme do fundo da logo: a logo se funde com a barra lateral e a tela de login */
+  --color-sidebar: #f1e1d2;
+
+  --color-surface: #ffffff;
+  --color-canvas: #faf5ee;
+  --color-line: #e9dccb;
+  --color-ink: #2b1a16;
+  --color-muted: #7b6a60;
+
+  /* semântica financeira */
+  --color-income: #2f7a4f;
+  --color-expense: #c0392b;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    /* aparelhos com notch: no modo paisagem o conteúdo não fica sob a borda */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  a, button, input, select, textarea, summary {
+    touch-action: manipulation; /* sem o atraso de toque duplo (zoom) em botões e links */
+  }
+  h1, h2, h3 {
+    @apply font-semibold tracking-tight;
+  }
+  h1 {
+    @apply font-display;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-gold {
+    @apply bg-gold-500 text-brand-950 hover:bg-gold-400;
+  }
+  .btn-outline {
+    @apply border-line bg-surface text-ink hover:bg-gold-50;
+  }
+  .btn-danger {
+    @apply border-red-200 bg-red-50 text-red-700 hover:bg-red-100;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-gold-50 hover:text-ink;
+  }
+  .btn-sm {
+    @apply min-h-8 px-2.5 py-1.5 text-xs;
+  }
+  .btn-lg {
+    @apply min-h-12 px-5 text-base;
+  }
+
+  .input {
+    @apply block min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink shadow-xs placeholder:text-muted/70 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-canvas;
+  }
+  .input[aria-invalid="true"] {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-100;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-muted;
+  }
+
+  .card {
+    @apply rounded-xl border border-line bg-surface shadow-xs;
+  }
+
+  .table-wrap {
+    @apply overflow-x-auto rounded-xl border border-line bg-surface;
+  }
+  .table {
+    @apply w-full text-left text-sm;
+  }
+  .table thead {
+    @apply border-b border-line bg-canvas text-xs uppercase tracking-wide text-muted;
+  }
+  .table th {
+    @apply px-4 py-2.5 font-medium whitespace-nowrap;
+  }
+  .table td {
+    @apply px-4 py-3 align-middle;
+  }
+  .table tbody tr {
+    @apply border-b border-line last:border-0;
+  }
+  .table tbody tr:hover {
+    @apply bg-gold-50/60;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .chip {
+    @apply inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-3.5 text-sm font-medium text-ink transition-colors hover:bg-gold-50;
+  }
+  .chip[aria-current="true"] {
+    @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-700;
+  }
+}
+
+/* Celular e toque: alvos de 44 px e fonte de 16 px nos campos (senão o iPhone dá zoom ao tocar) */
+@media (pointer: coarse) {
+  .btn, .chip {
+    min-height: 2.75rem;
+  }
+  .btn-sm {
+    min-height: 2.5rem;
+  }
+  .btn-lg {
+    min-height: 3.25rem;
+  }
+  .input {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Celular: cada linha da tabela vira um cartão (os rótulos vêm do <MobileTables />, em data-label). */
+@media (max-width: 767px) {
+  .table-wrap:has(> .table[data-cards]) {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .table[data-cards],
+  .table[data-cards] tbody,
+  .table[data-cards] tfoot {
+    display: block;
+  }
+  .table[data-cards] thead {
+    display: none;
+  }
+  .table[data-cards] tbody tr,
+  .table[data-cards] tfoot tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0;
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+  }
+  .table[data-cards] tbody tr:last-child {
+    border-bottom-width: 1px;
+  }
+  .table[data-cards] td {
+    display: block;
+    position: relative;
+    min-height: 2.25rem;
+    padding: 0.45rem 1rem 0.45rem 40%;
+    text-align: left !important;
+  }
+  .table[data-cards] td::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0.55rem;
+    left: 1rem;
+    width: calc(40% - 1.25rem);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--color-muted);
+  }
+  .table[data-cards] td[data-label=""] {
+    padding-left: 1rem;
+    text-align: right !important;
+  }
+  .table[data-cards] td[data-label=""]::before {
+    display: none;
+  }
+
+  /* filtros: campos lado a lado quando cabem */
+  .filter-form > div {
+    flex: 1 1 10rem;
+  }
+  .filter-form > .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Barra de rolagem horizontal dos chips de período */
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@media print {
+  aside, nav[aria-label="Atalhos"], .no-print {
+    display: none !important;
+  }
+}
