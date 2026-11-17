@@ -140,3 +140,23 @@ export async function changePlatformPasswordAction(_: FormState, formData: FormD
     return { redirectTo: (await getPlatformBase()) || "/" };
   }, { allowPasswordChange: true });
 }
+
+/** Altera o próprio nome e e-mail (login) no console. Pede a senha atual para confirmar. */
+export async function updatePlatformProfileAction(_: FormState, formData: FormData): Promise<FormState> {
+  return runPlatformAction(formData, async (admin) => {
+    const parsed = parseForm(z.object({ name: required("Nome", 100), email: email(), current: z.string().min(1, "Informe a senha atual").max(200) }), formData);
+    if (parsed.state) return parsed.state;
+    const { name, email: newEmail, current } = parsed.data;
+    if (!(await withinLimit(`plat-profile:${admin.id}`, 10, 15 * 60))) throw new UserError("Muitas tentativas. Aguarde alguns minutos.");
+
+    const row = await db.platformAdmin.findUnique({ where: { id: admin.id }, select: { passwordHash: true, name: true, email: true } });
+    if (!row || !(await verifyPassword(current, row.passwordHash))) throw new UserError("Senha atual incorreta.", { current: "Senha atual incorreta" });
+    if (row.name === name && row.email === newEmail) throw new UserError("Nada foi alterado.");
+
+    // e-mail repetido é traduzido pelo erro de unicidade do banco ("Já existe um administrador com este e-mail.")
+    await db.platformAdmin.update({ where: { id: admin.id }, data: { name, email: newEmail } });
+    const changes = [row.name !== name ? "nome" : null, row.email !== newEmail ? "e-mail" : null].filter(Boolean).join(" e ");
+    await recordPlatformEvent({ id: admin.id, name }, "perfil_alterado", `Alterou o próprio ${changes}`, { de: { nome: row.name, email: row.email }, para: { nome: name, email: newEmail } });
+    return { success: "Dados atualizados. No próximo login use o e-mail novo." };
+  });
+}

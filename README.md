@@ -84,6 +84,7 @@ TZ=America/Sao_Paulo
   Escolha um caminho pouco óbvio. `PLATFORM_ADMIN_PATH=off` desativa o console por caminho; `PLATFORM_ADMIN_HOSTS=admin.seudominio.com.br`
   usa um domínio dedicado (adicione o domínio ao app no Easypanel).
 - Depois do primeiro acesso você pode **remover `ADMIN_PASSWORD` e `PLATFORM_ADMIN_PASSWORD`** das variáveis (só são lidas quando ainda não há contas).
+- Os `PLATFORM_ADMIN_*` e `ADMIN_*` só valem na criação das contas. Para mudar depois: console › **Minha conta** (nome, e-mail e senha do fornecedor, pedindo a senha atual) e, para o administrador da empresa, Administração › Usuários › Editar.
 
 ### 4. Atualizar
 Faça push no `main` e clique em **Deploy** (ou ative o deploy automático por webhook do GitHub). As migrations novas rodam sozinhas.

@@ -4,7 +4,7 @@ import { ActionForm, ButtonForm, FormGrid, SubmitButton, TextField, TextareaFiel
 import { MODULES } from "@/lib/modules";
 import {
   blockSystemAction, changePlatformPasswordAction, createPlatformAdminAction, platformLoginAction, resetPlatformAdminPasswordAction,
-  setExpiryAction, setModulesAction, togglePlatformAdminAction, unblockSystemAction,
+  setExpiryAction, setModulesAction, togglePlatformAdminAction, unblockSystemAction, updatePlatformProfileAction,
 } from "@/app/platform/actions";
 
 export function PlatformLoginForm() {
@@ -93,6 +93,17 @@ export function PlatformPasswordForm({ forced }: { forced: boolean }) {
       <TextField name="password" label="Nova senha" type="password" autoComplete="new-password" maxLength={200} required hint="10 ou mais caracteres, com letra maiúscula, minúscula e número." />
       <TextField name="confirm" label="Repita a nova senha" type="password" autoComplete="new-password" maxLength={200} required />
       <SubmitButton>Alterar senha</SubmitButton>
+    </ActionForm>
+  );
+}
+
+export function PlatformProfileForm({ name, email }: { name: string; email: string }) {
+  return (
+    <ActionForm action={updatePlatformProfileAction} className="max-w-md space-y-4">
+      <TextField name="name" label="Nome" defaultValue={name} required maxLength={100} />
+      <TextField name="email" label="E-mail (é o login)" type="email" inputMode="email" autoComplete="off" defaultValue={email} required />
+      <TextField name="current" label="Senha atual (para confirmar)" type="password" autoComplete="current-password" maxLength={200} required />
+      <SubmitButton>Salvar dados</SubmitButton>
     </ActionForm>
   );
 }
