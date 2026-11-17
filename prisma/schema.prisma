@@ -180,6 +180,7 @@ model User {
   purchases     Purchase[]       @relation("PurchaseCreatedBy")
   orders        Order[]          @relation("OrderCreatedBy")
   movements     StockMovement[]
+  attachments   PurchaseAttachment[]
 
   @@map("users")
 }
@@ -408,9 +409,29 @@ model Purchase {
   items         PurchaseItem[]
   entry         FinancialEntry?
   movements     StockMovement[]
+  attachments   PurchaseAttachment[]
 
   @@index([date])
   @@map("purchases")
+}
+
+/// Comprovante da compra (foto ou PDF da nota). Guardado no banco para entrar no backup.
+model PurchaseAttachment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseId  String   @map("purchase_id") @db.Uuid
+  fileName    String   @map("file_name")
+  /// Definido pelo servidor a partir do conteúdo do arquivo (nunca pelo que o navegador informou).
+  contentType String   @map("content_type")
+  sizeBytes   Int      @map("size_bytes")
+  data        Bytes
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  purchase  Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([purchaseId])
+  @@map("purchase_attachments")
 }
 
 model PurchaseItem {

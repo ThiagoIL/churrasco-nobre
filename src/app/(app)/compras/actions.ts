@@ -9,6 +9,7 @@ import { parseLines } from "@/lib/lines";
 import { dateOnly } from "@/lib/dates";
 import { MAX_CENTS, formatMoney, lineTotal } from "@/lib/money";
 import { moveStock } from "@/lib/stock-service";
+import { validateUpload } from "@/lib/uploads";
 
 const schema = z.object({
   date: dateField("Data"),
@@ -37,6 +38,15 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
       lines = parseLines(d.lines, { requireCost: true });
     } catch (error) {
       throw new UserError((error as Error).message);
+    }
+    // comprovante opcional (foto ou PDF da nota)
+    const file = formData.get("file");
+    let upload: { bytes: Uint8Array<ArrayBuffer>; fileName: string; contentType: string } | null = null;
+    if (file instanceof File && file.size > 0) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const check = validateUpload(file.name, bytes);
+      if (!check.ok) throw new UserError(check.error, { file: check.error });
+      upload = { bytes, fileName: check.fileName, contentType: check.contentType };
     }
     if (!d.paid && !d.dueDate) throw new UserError("Informe o vencimento da compra a pagar.", { dueDate: "Informe o vencimento" });
 
@@ -96,6 +106,9 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
           await moveStock(tx, { itemId: l.itemId, direction: "IN", reason: "PURCHASE", qtyMilli: l.qtyMilli, unitCostCents: l.unitCostCents, purchaseId: purchase.id, createdById: user.id });
         }
         if ((l.unitCostCents ?? 0) > 0) await tx.item.update({ where: { id: l.itemId }, data: { costCents: l.unitCostCents ?? 0 } });
+      }
+      if (upload) {
+        await tx.purchaseAttachment.create({ data: { purchaseId: purchase.id, fileName: upload.fileName, contentType: upload.contentType, sizeBytes: upload.bytes.length, data: upload.bytes, createdById: user.id } });
       }
       await audit({ action: "compra.criou", entity: "compra", entityId: purchase.id, userId: user.id, actor: user.email, data: { numero: purchase.number, total, itens: priced.length } }, tx);
       return purchase;

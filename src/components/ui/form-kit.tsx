@@ -363,3 +363,18 @@ export function StickyActions({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+/** Escolha de arquivo (foto ou PDF): no celular oferece câmera e galeria. */
+export function FileField({ name, label, hint, span, accept = "image/jpeg,image/png,image/webp,application/pdf" }: { name: string; label: string; hint?: string; span?: Span; accept?: string }) {
+  const id = useId();
+  const error = useFieldError(name);
+  return (
+    <FieldShell id={id} label={label} hint={hint ?? "JPG, PNG, WEBP ou PDF, até 8 MB."} error={error} span={span}>
+      <input
+        id={id} name={name} type="file" accept={accept}
+        aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined}
+        className="input file:mr-3 file:rounded-md file:border-0 file:bg-gold-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand-800"
+      />
+    </FieldShell>
+  );
+}

@@ -12,6 +12,11 @@ const securityHeaders = [
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    // comprovantes de compra: até 8 MB por arquivo, com folga para o multipart
+    serverActions: { bodySizeLimit: "9mb" },
+    proxyClientMaxBodySize: "9mb",
+  },
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },

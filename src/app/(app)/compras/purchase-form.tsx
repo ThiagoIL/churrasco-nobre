@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { ActionForm, FormGrid, SelectField, StickyActions, SubmitButton, TextField, TextareaField } from "@/components/ui/form-kit";
+import { ActionForm, FileField, FormGrid, SelectField, StickyActions, SubmitButton, TextField, TextareaField } from "@/components/ui/form-kit";
 import { LineBuilder, type CatalogItem } from "@/components/line-builder";
 import { formatMoney } from "@/lib/money";
 import { createPurchaseAction } from "@/app/(app)/compras/actions";
@@ -44,6 +44,7 @@ export function PurchaseForm({
           <SelectField name="categoryId" label="Categoria da despesa" options={categories.map((c) => ({ value: c.id, label: c.name }))} defaultValue={defaultCategoryId} required />
           <TextField name="invoiceNumber" label="Nº da nota (opcional)" maxLength={40} />
           <TextareaField name="note" label="Observação (opcional)" rows={2} maxLength={300} span={2} />
+          <FileField name="file" label="Foto ou PDF da nota (opcional)" span={2} />
         </FormGrid>
       </section>
 

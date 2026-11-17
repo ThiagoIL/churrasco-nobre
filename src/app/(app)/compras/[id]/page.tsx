@@ -8,6 +8,7 @@ import { formatMoney, formatQty } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui/primitives";
 import { ActionForm, SubmitButton, TextField, FormGrid } from "@/components/ui/form-kit";
 import { PurchaseStatusBadge } from "@/components/status-badges";
+import { AttachmentsCard } from "@/app/(app)/compras/attachments-card";
 import { cancelPurchaseAction } from "@/app/(app)/compras/actions";
 import { payEntryAction } from "@/app/(app)/financeiro/actions";
 import { hasAccess } from "@/lib/access";
@@ -26,6 +27,8 @@ export default async function PurchasePage({ params }: { params: Promise<{ id: s
       supplier: true, paymentMethod: true, category: true, createdBy: { select: { name: true } },
       items: { include: { item: { select: { id: true, name: true, unit: true, trackStock: true } } }, orderBy: { item: { name: "asc" } } },
       entry: { select: { id: true, status: true } },
+      // só os metadados: o conteúdo do arquivo só sai pela rota de download
+      attachments: { select: { id: true, fileName: true, contentType: true, sizeBytes: true, createdAt: true }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!purchase) notFound();
@@ -62,6 +65,13 @@ export default async function PurchasePage({ params }: { params: Promise<{ id: s
                 <tfoot><tr><td colSpan={3} className="px-4 py-3 text-right text-sm font-medium">Total</td><td className="px-4 py-3 text-right text-lg font-semibold tabular-nums text-brand-700">{formatMoney(purchase.totalCents)}</td></tr></tfoot>
               </table>
             </div>
+          </Card>
+          <Card title="Comprovantes" description="Foto ou PDF da nota fiscal.">
+            <AttachmentsCard
+              purchaseId={purchase.id}
+              canEdit={canEdit}
+              attachments={purchase.attachments.map((a) => ({ id: a.id, fileName: a.fileName, contentType: a.contentType, sizeBytes: a.sizeBytes, createdAt: formatDateTime(a.createdAt) }))}
+            />
           </Card>
           {purchase.status === "CANCELED" && (
             <p className="rounded-lg border border-line bg-surface px-4 py-3 text-sm text-muted">

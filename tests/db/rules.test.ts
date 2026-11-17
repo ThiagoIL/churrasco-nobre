@@ -188,6 +188,30 @@ d("pedidos e compras", () => {
   });
 });
 
+d("comprovantes de compra", () => {
+  const purchase = async () => {
+    const cat = await one<{ id: string }>(`INSERT INTO financial_categories (name, kind) VALUES ('Compras T3', 'EXPENSE') RETURNING id`);
+    return one<{ id: string }>(`INSERT INTO purchases (date, category_id, total_cents) VALUES (current_date, $1, 1000) RETURNING id`, [cat.id]);
+  };
+  const attach = (purchaseId: string, type: string, size: number, dataLen = size, name = "nota.jpg") =>
+    fails(`INSERT INTO purchase_attachments (purchase_id, file_name, content_type, size_bytes, data) VALUES ($1, $2, $3, $4, decode(repeat('ab', $5::int), 'hex'))`, [purchaseId, name, type, size, dataLen]);
+
+  it("aceita imagem e PDF dentro do limite", async () => {
+    const p = await purchase();
+    expect(await attach(p.id, "image/jpeg", 10)).toBeNull();
+    expect(await attach(p.id, "application/pdf", 10)).toBeNull();
+  });
+  it("recusa tipo fora da lista, tamanho inválido ou diferente do conteúdo e nome vazio", async () => {
+    const p = await purchase();
+    expect(await attach(p.id, "text/html", 10)).toMatch(/purchase_attachments_type/);
+    expect(await attach(p.id, "image/svg+xml", 10)).toMatch(/purchase_attachments_type/);
+    expect(await attach(p.id, "image/png", 0, 0)).toMatch(/purchase_attachments_size/);
+    expect(await attach(p.id, "image/png", 9 * 1024 * 1024, 10)).toMatch(/purchase_attachments_size/);
+    expect(await attach(p.id, "image/png", 20, 10)).toMatch(/purchase_attachments_size/);
+    expect(await attach(p.id, "image/png", 10, 10, "  ")).toMatch(/purchase_attachments_name/);
+  });
+});
+
 d("auditoria", () => {
   it("não pode ser alterada nem apagada", async () => {
     const log = await one<{ id: string }>(`INSERT INTO audit_logs (action, entity) VALUES ('teste.criou', 'teste') RETURNING id`);

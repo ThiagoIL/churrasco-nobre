@@ -11,7 +11,7 @@ pelo celular. Instalação única (um restaurante por instalação), instalável
 | **Início** | Faturado, gasto e saldo (hoje, mês atual, mês anterior ou período), atalhos de lançamento e alertas. |
 | **Financeiro** | Receitas e despesas (pagas ou a pagar/receber), filtros rápidos de período, baixa, cancelamento, **fluxo de caixa** diário com saldo acumulado e previsto, exportação CSV. |
 | **Dashboard** | Receitas × despesas, categorias, formas de pagamento, itens mais vendidos, vendas por tipo de pedido, compras por fornecedor, estoque em alerta, comparação com o período anterior. |
-| **Compras** | Registra o que foi comprado: **entra no estoque**, atualiza o último custo do item e **gera a despesa** (paga ou a pagar). Cancelar estorna estoque e despesa. |
+| **Compras** | Registra o que foi comprado: **entra no estoque**, atualiza o último custo do item e **gera a despesa** (paga ou a pagar). Cancelar estorna estoque e despesa. Aceita **foto ou PDF da nota** (comprovante). |
 | **Estoque** | Saldo por item (mínimo, valor), **consumo**, perdas, ajuste de inventário e histórico imutável de movimentações. Vendas dão baixa automática. |
 | **Pedidos** | Mesa, balcão, delivery e encomenda, com seletor de itens feito para o celular. Fechar o pedido gera a receita e baixa o estoque. |
 | **Cadastros** | Itens para compra e venda com valores, categorias financeiras, formas de pagamento, fornecedores e clientes (desativar em vez de excluir quando há histórico). |
@@ -98,6 +98,7 @@ O banco guarda tudo, então o backup precisa **sair do servidor**:
 | Sintoma | Causa provável |
 |---|---|
 | Container reinicia em loop | Migration falhou (veja o log) ou `DATABASE_URL` errada. |
+| Envio de comprovante falha com arquivos grandes | Proxy/reverso com limite de corpo menor que 9 MB (o app aceita até 8 MB por arquivo). |
 | Login "recusa" sempre, de qualquer IP | `TRUST_PROXY=false` atrás do proxy: todos parecem o mesmo IP e o limite de tentativas dispara. Use `true`. |
 | Link de recuperação de senha não chega | `SMTP_*` ausente: o link só aparece no log do app. Configure o SMTP. |
 | Cookie não grava | O acesso precisa ser por **HTTPS** (cookie `__Host-` exige `Secure`). |
@@ -153,6 +154,7 @@ Para testar a imagem de produção: `docker compose --profile app up --build`.
 - **Sessão**: token aleatório de 256 bits (no banco só o SHA-256), expira em **12 h** ou **120 min sem uso**, cookie `__Host-` `HttpOnly` `Secure` `SameSite=Lax`, revogada ao trocar a senha, desativar o usuário ou bloquear o sistema. Sessões do sistema e do console são separadas.
 - **Permissões**: por módulo (sem acesso / consulta / edita), conferidas no proxy (telas) e em cada ação do servidor. O fornecedor pode desligar módulos.
 - **Regras também no banco** (migrations `business_rules` e `system_categories_guard`): sempre ao menos 1 administrador ativo, ninguém desativa/rebaixa/exclui a si mesmo, conta master protegida, estoque nunca negativo por consumo/perda/ajuste, movimentações e auditoria imutáveis, pedido pago/cancelado e compra cancelada não mudam, categorias do sistema protegidas, valores positivos.
+- **Comprovantes**: só JPG/PNG/WEBP/PDF até 8 MB, com o tipo conferido pelo **conteúdo** do arquivo (não só pela extensão), guardados no banco (entram no backup) e entregues com `nosniff`, sem cache e CSP `sandbox`; PDF sempre baixa.
 - **Cabeçalhos**: CSP com nonce por requisição, HSTS, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy e COOP.
 - **Auditoria** de tudo, inclusive logins e falhas (IP, usuário, ação, dados), em Administração › Auditoria.
 - **Bloqueio por vencimento**: defina a data no console; depois dela o acesso fecha sozinho.
@@ -166,7 +168,7 @@ No celular o menu vira gaveta, as tabelas viram cartões, alvos de toque têm 44
 ## Estrutura
 
 ```
-prisma/               schema e migrations SQL (init, business_rules, system_categories_guard)
+prisma/               schema e migrations SQL (init, business_rules, system_categories_guard, purchase_attachments)
 src/app/(app)/        telas do sistema (financeiro, compras, estoque, pedidos, dashboard, cadastros, usuários…)
 src/app/platform/     console do fornecedor (alcançado pelo proxy em /sistema-admin)
 src/lib/rules/        regras puras (senha, bloqueio, sessão, usuários, estoque) — testadas

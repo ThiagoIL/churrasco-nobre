@@ -51,6 +51,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "financeiro.cancelou": "Cancelou lançamento",
   "compra.criou": "Registrou compra",
   "compra.cancelou": "Cancelou compra",
+  "compra.anexou": "Anexou comprovante à compra",
+  "compra.removeu_anexo": "Removeu comprovante da compra",
   "estoque.saida": "Lançou saída de estoque",
   "estoque.ajuste": "Ajustou o estoque",
   "pedido.criou": "Criou pedido",

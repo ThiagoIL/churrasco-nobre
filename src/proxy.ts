@@ -21,7 +21,8 @@ export async function proxy(request: NextRequest) {
   headers.set("content-security-policy", csp);
 
   const response = await dispatch(request, headers);
-  response.headers.set("Content-Security-Policy", csp);
+  // a rota de download de comprovantes define a própria CSP (sandbox)
+  if (!request.nextUrl.pathname.startsWith("/compras/anexo/")) response.headers.set("Content-Security-Policy", csp);
   return response;
 }
 
