@@ -75,10 +75,16 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "fornecedor.editou": "Editou fornecedor",
   "fornecedor.ativou": "Reativou fornecedor",
   "fornecedor.desativou": "Desativou fornecedor",
+  "mesa.criou": "Cadastrou mesa/comanda",
+  "mesa.editou": "Editou mesa/comanda",
+  "mesa.ativou": "Reativou mesa/comanda",
+  "mesa.desativou": "Desativou mesa/comanda",
   "cliente.criou": "Criou cliente",
   "cliente.editou": "Editou cliente",
   "cliente.ativou": "Reativou cliente",
   "cliente.desativou": "Desativou cliente",
+  "estoque.saldo_inicial": "Lançou saldo inicial",
+  "estoque.minimo": "Alterou estoque mínimo",
   "exportacao.csv": "Exportou dados (CSV)",
 };
 

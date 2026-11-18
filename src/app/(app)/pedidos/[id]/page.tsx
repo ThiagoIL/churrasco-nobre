@@ -60,11 +60,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   ))}
                 </tbody>
                 <tfoot>
+                  {(order.discountCents > 0 || order.freightCents > 0) && (
+                    <tr><td colSpan={3} className="px-4 py-2 text-right text-sm text-muted">Subtotal</td><td className="px-4 py-2 text-right tabular-nums">{formatMoney(subtotal)}</td></tr>
+                  )}
+                  {order.freightCents > 0 && (
+                    <tr><td colSpan={3} className="px-4 py-2 text-right text-sm text-muted">Frete</td><td className="px-4 py-2 text-right tabular-nums">+ {formatMoney(order.freightCents)}</td></tr>
+                  )}
                   {order.discountCents > 0 && (
-                    <>
-                      <tr><td colSpan={3} className="px-4 py-2 text-right text-sm text-muted">Subtotal</td><td className="px-4 py-2 text-right tabular-nums">{formatMoney(subtotal)}</td></tr>
-                      <tr><td colSpan={3} className="px-4 py-2 text-right text-sm text-muted">Desconto</td><td className="px-4 py-2 text-right tabular-nums text-expense">− {formatMoney(order.discountCents)}</td></tr>
-                    </>
+                    <tr><td colSpan={3} className="px-4 py-2 text-right text-sm text-muted">Desconto</td><td className="px-4 py-2 text-right tabular-nums text-expense">− {formatMoney(order.discountCents)}</td></tr>
                   )}
                   <tr><td colSpan={3} className="px-4 py-3 text-right text-sm font-medium">Total</td><td className="px-4 py-3 text-right text-lg font-semibold tabular-nums text-brand-700">{formatMoney(order.totalCents)}</td></tr>
                 </tfoot>
@@ -97,7 +100,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   <SelectField name="paymentMethodId" label="Forma de pagamento" required placeholder="Escolha…" options={methods.map((m) => ({ value: m.id, label: m.name }))} span={2} />
                   <MoneyField name="discount" label="Desconto (opcional)" span={2} />
                 </FormGrid>
-                <SubmitButton size="lg" className="w-full">Receber {formatMoney(subtotal)}</SubmitButton>
+                <SubmitButton size="lg" className="w-full">Receber {formatMoney(subtotal + order.freightCents)}</SubmitButton>
               </ActionForm>
             </Card>
           )}

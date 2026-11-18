@@ -5,12 +5,11 @@ import { db } from "@/lib/db";
 import { runAction } from "@/lib/action";
 import { audit } from "@/lib/audit";
 import {
-  UserError, checkbox, optional, optionalMoney, optionalQuantity, optionalUuid, parseForm, required, requiredEnum, uuid, type FormState,
+  UserError, checkbox, optional, optionalMoney, optionalUuid, parseForm, required, requiredEnum, uuid, type FormState,
 } from "@/lib/form";
-import { moveStock } from "@/lib/stock-service";
 import { featureOn } from "@/lib/features";
 
-const ENTITY_LABELS = { categoria: "categoria", pagamento: "forma de pagamento", fornecedor: "fornecedor", cliente: "cliente", item: "item" } as const;
+const ENTITY_LABELS = { categoria: "categoria", pagamento: "forma de pagamento", fornecedor: "fornecedor", cliente: "cliente", item: "item", mesa: "mesa ou comanda" } as const;
 
 // ───────────────────────── categorias financeiras ─────────────────────────
 
@@ -72,6 +71,24 @@ export async function saveSupplierAction(_: FormState, formData: FormData): Prom
   });
 }
 
+// ───────────────────────── mesas e comandas ─────────────────────────
+
+export async function saveTableAction(_: FormState, formData: FormData): Promise<FormState> {
+  return runAction("CADASTROS", formData, async (user) => {
+    const parsed = parseForm(z.object({ id: optionalUuid(), name: required("Nome", 30) }), formData);
+    if (parsed.state) return parsed.state;
+    const { id, name } = parsed.data;
+    if (id) {
+      await db.diningTable.update({ where: { id }, data: { name } });
+      await audit({ action: "mesa.editou", entity: "mesa", entityId: id, userId: user.id, actor: user.email, data: { nome: name } });
+      return { redirectTo: "/cadastros/mesas" };
+    }
+    const created = await db.diningTable.create({ data: { name } });
+    await audit({ action: "mesa.criou", entity: "mesa", entityId: created.id, userId: user.id, actor: user.email, data: { nome: name } });
+    return { success: `“${name}” cadastrada.` };
+  });
+}
+
 // ───────────────────────── clientes ─────────────────────────
 
 export async function saveCustomerAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -96,16 +113,12 @@ export async function saveCustomerAction(_: FormState, formData: FormData): Prom
 const itemSchema = z.object({
   id: optionalUuid(),
   name: required("Nome", 120),
-  code: optional(30),
-  unit: required("Unidade", 12),
-  groupName: optional(40),
+  groupName: required("Grupo", 40),
   purchasable: checkbox(),
   sellable: checkbox(),
   trackStock: checkbox(),
   cost: optionalMoney("Custo"),
   price: optionalMoney("Preço"),
-  minStock: optionalQuantity("Estoque mínimo"),
-  initialStock: optionalQuantity("Saldo inicial"),
   active: checkbox(),
   note: optional(300),
 });
@@ -118,9 +131,10 @@ export async function saveItemAction(_: FormState, formData: FormData): Promise<
     if (!d.purchasable && !d.sellable) throw new UserError("Marque se o item é para compra, para venda ou os dois.");
 
     const data = {
-      name: d.name, code: d.code, unit: d.unit, groupName: d.groupName,
+      // todos os itens são contados em unidades; código, saldo inicial e mínimo ficam no Estoque
+      name: d.name, unit: "un", groupName: d.groupName,
       purchasable: d.purchasable, sellable: d.sellable, trackStock: d.trackStock,
-      costCents: d.cost ?? 0, priceCents: d.price ?? 0, minStockMilli: d.minStock, note: d.note,
+      costCents: d.cost ?? 0, priceCents: d.price ?? 0, note: d.note,
     };
 
     if (d.id) {
@@ -131,9 +145,6 @@ export async function saveItemAction(_: FormState, formData: FormData): Promise<
 
     await db.$transaction(async (tx) => {
       const item = await tx.item.create({ data: { ...data, active: true } });
-      if (d.trackStock && d.initialStock > 0) {
-        await moveStock(tx, { itemId: item.id, direction: "IN", reason: "ADJUSTMENT", qtyMilli: d.initialStock, note: "Saldo inicial", createdById: user.id });
-      }
       await audit({ action: "item.criou", entity: "item", entityId: item.id, userId: user.id, actor: user.email, data: { nome: d.name, custo: data.costCents, preco: data.priceCents } }, tx);
     });
     return { redirectTo: "/cadastros/itens" };
@@ -142,7 +153,7 @@ export async function saveItemAction(_: FormState, formData: FormData): Promise<
 
 // ───────────────────────── ativar, desativar e excluir ─────────────────────────
 
-const toggleSchema = z.object({ entity: requiredEnum(["categoria", "pagamento", "fornecedor", "cliente", "item"] as const, "Cadastro"), id: uuid("o registro"), active: z.enum(["true", "false"]) });
+const toggleSchema = z.object({ entity: requiredEnum(["categoria", "pagamento", "fornecedor", "cliente", "item", "mesa"] as const, "Cadastro"), id: uuid("o registro"), active: z.enum(["true", "false"]) });
 
 /** Desativa (some das listas de escolha, mantém o histórico) ou reativa um cadastro. */
 export async function toggleActiveAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -160,6 +171,7 @@ export async function toggleActiveAction(_: FormState, formData: FormData): Prom
     } else if (entity === "pagamento") await db.paymentMethod.update({ where: { id }, data: { active } });
     else if (entity === "fornecedor") await db.supplier.update({ where: { id }, data: { active } });
     else if (entity === "cliente") await db.customer.update({ where: { id }, data: { active } });
+    else if (entity === "mesa") await db.diningTable.update({ where: { id }, data: { active } });
     else await db.item.update({ where: { id }, data: { active } });
 
     await audit({ action: `${entity}.${active ? "ativou" : "desativou"}`, entity, entityId: id, userId: user.id, actor: user.email });
@@ -182,6 +194,7 @@ export async function deleteEntityAction(_: FormState, formData: FormData): Prom
       } else if (entity === "pagamento") await db.paymentMethod.delete({ where: { id } });
       else if (entity === "fornecedor") await db.supplier.delete({ where: { id } });
       else if (entity === "cliente") await db.customer.delete({ where: { id } });
+      else if (entity === "mesa") await db.diningTable.delete({ where: { id } });
       else await db.item.delete({ where: { id } });
     } catch (error) {
       if (error instanceof UserError) throw error;

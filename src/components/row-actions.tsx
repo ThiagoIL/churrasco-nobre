@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ButtonForm } from "@/components/ui/form-kit";
 import { deleteEntityAction, toggleActiveAction } from "@/app/(app)/cadastros/actions";
 
-type Entity = "categoria" | "pagamento" | "fornecedor" | "cliente" | "item";
+type Entity = "categoria" | "pagamento" | "fornecedor" | "cliente" | "item" | "mesa";
 
 /** Ações de uma linha de cadastro: editar, desativar/reativar e excluir (só quando nunca foi usado). */
 export function RowActions({

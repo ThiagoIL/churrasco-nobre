@@ -12,9 +12,9 @@ pelo celular. Instalação única (um restaurante por instalação), instalável
 | **Financeiro** | Receitas e despesas (pagas ou a pagar/receber), filtros rápidos de período, baixa, cancelamento, **fluxo de caixa** diário com saldo acumulado e previsto, exportação CSV. |
 | **Dashboard** | Receitas × despesas, categorias, formas de pagamento, itens mais vendidos, vendas por tipo de pedido, compras por fornecedor, estoque em alerta, comparação com o período anterior. |
 | **Compras** | Registra o que foi comprado: **entra no estoque**, atualiza o último custo do item e **gera a despesa** (paga ou a pagar). Cancelar estorna estoque e despesa. Aceita **foto ou PDF da nota** (comprovante). |
-| **Estoque** | Saldo por item (mínimo, valor), **consumo**, perdas, ajuste de inventário e histórico imutável de movimentações. Vendas dão baixa automática. |
-| **Pedidos** | Mesa, balcão, delivery e encomenda, com seletor de itens feito para o celular. Fechar o pedido gera a receita e baixa o estoque. |
-| **Cadastros** | Itens para compra e venda com valores, categorias financeiras, formas de pagamento, fornecedores e clientes (desativar em vez de excluir quando há histórico). |
+| **Estoque** | Saldo por item (com **estoque mínimo** editável na própria tela), **saldo inicial**, **consumo**, perdas, ajuste de inventário e histórico imutável de movimentações. Vendas dão baixa automática. |
+| **Pedidos** | Mesa/comanda (escolhida entre as cadastradas) e delivery (com frete), com seletor de itens feito para o celular. Fechar o pedido gera a receita e baixa o estoque. |
+| **Cadastros** | Itens para compra e venda com valores, categorias financeiras, formas de pagamento, mesas e comandas, fornecedores e clientes (desativar em vez de excluir quando há histórico). |
 | **Administração** | Usuários, perfis de acesso por módulo (sem acesso / consulta / edita), auditoria completa. |
 | **Console do fornecedor** | Login e sessão separados, vários administradores, bloquear/liberar o cliente, vencimento com bloqueio automático, módulos liberados, **recursos opcionais** dentro de cada módulo (cadastro de clientes e de fornecedores, que começam **desligados**), histórico de eventos. |
 

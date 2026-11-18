@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
-import { centsToInput, formatQty, qtyToInput } from "@/lib/money";
+import { centsToInput, formatQty } from "@/lib/money";
 import { Card } from "@/components/ui/primitives";
 import { ItemForm } from "@/app/(app)/cadastros/itens/item-form";
 
@@ -20,14 +20,14 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
   if (!item) notFound();
   return (
     <div className="max-w-4xl">
-      <Card title={item.name} description={item.trackStock ? `Saldo em estoque: ${formatQty(item.stockQtyMilli)} ${item.unit}. O saldo muda por compras, vendas, consumo e ajustes (em Estoque).` : undefined}>
+      <Card title={item.name} description={item.trackStock ? `Saldo em estoque: ${formatQty(item.stockQtyMilli)}. O saldo, o saldo inicial e o estoque mínimo ficam em Estoque.` : undefined}>
         <ItemForm
           groups={groups.map((g) => g.groupName!)}
           initial={{
-            id: item.id, name: item.name, code: item.code ?? "", unit: item.unit, groupName: item.groupName ?? "",
+            id: item.id, name: item.name, groupName: item.groupName ?? "",
             purchasable: item.purchasable, sellable: item.sellable, trackStock: item.trackStock,
             cost: item.costCents ? centsToInput(item.costCents) : "", price: item.priceCents ? centsToInput(item.priceCents) : "",
-            minStock: item.minStockMilli ? qtyToInput(item.minStockMilli) : "", active: item.active, note: item.note ?? "",
+            active: item.active, note: item.note ?? "",
           }}
         />
       </Card>

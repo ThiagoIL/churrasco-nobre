@@ -6,7 +6,7 @@ export const MODULES = [
   { key: "COMPRAS", label: "Compras", description: "Registro das compras; entra no estoque e gera a despesa automaticamente.", paths: ["/compras"] },
   { key: "ESTOQUE", label: "Estoque", description: "Saldo dos itens, consumo, perdas, ajustes e histórico de movimentações.", paths: ["/estoque"] },
   { key: "PEDIDOS", label: "Pedidos", description: "Lançamento rápido de pedidos (mesa, balcão, delivery e encomendas) e fechamento com pagamento.", paths: ["/pedidos"] },
-  { key: "CADASTROS", label: "Cadastros", description: "Itens (compra e venda), categorias financeiras, formas de pagamento, fornecedores e clientes.", paths: ["/cadastros"] },
+  { key: "CADASTROS", label: "Cadastros", description: "Itens (compra e venda), categorias financeiras, formas de pagamento, mesas e comandas, fornecedores e clientes.", paths: ["/cadastros"] },
 ] as const;
 
 /**

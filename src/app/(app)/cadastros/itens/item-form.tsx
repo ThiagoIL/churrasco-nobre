@@ -2,15 +2,14 @@
 
 import { useId } from "react";
 import {
-  ActionForm, CheckboxField, FormActions, FormGrid, MoneyField, QtyField, SubmitButton, TextField, TextareaField, useFieldError,
+  ActionForm, CheckboxField, FormActions, FormGrid, MoneyField, SubmitButton, TextField, TextareaField, useFieldError,
 } from "@/components/ui/form-kit";
 import { LinkButton } from "@/components/ui/primitives";
-import { UNITS } from "@/lib/labels";
 import { saveItemAction } from "@/app/(app)/cadastros/actions";
 
 type Initial = {
-  id: string; name: string; code: string; unit: string; groupName: string; purchasable: boolean; sellable: boolean;
-  trackStock: boolean; cost: string; price: string; minStock: string; active: boolean; note: string;
+  id: string; name: string; groupName: string; purchasable: boolean; sellable: boolean;
+  trackStock: boolean; cost: string; price: string; active: boolean; note: string;
 };
 
 function DatalistField({ name, label, options, defaultValue, hint, required, maxLength }: { name: string; label: string; options: readonly string[]; defaultValue?: string; hint?: string; required?: boolean; maxLength: number }) {
@@ -32,15 +31,10 @@ export function ItemForm({ initial, groups }: { initial?: Initial; groups: strin
     <ActionForm action={saveItemAction} className="space-y-5">
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <FormGrid cols={3}>
-        <TextField name="name" label="Nome do item" defaultValue={initial?.name} required span={2} maxLength={120} placeholder="Ex.: Picanha, Cerveja long neck, Carvão" autoFocus={!initial} />
-        <TextField name="code" label="Código (opcional)" defaultValue={initial?.code} maxLength={30} />
-        <DatalistField name="unit" label="Unidade" options={UNITS} defaultValue={initial?.unit ?? "un"} required maxLength={12} hint="kg, un, L, cx…" />
-        <DatalistField name="groupName" label="Grupo (opcional)" options={groups} defaultValue={initial?.groupName} maxLength={40} hint="Carnes, Bebidas, Acompanhamentos…" />
-        <div />
-        <MoneyField name="cost" label="Custo por unidade" defaultValue={initial?.cost} hint="Atualizado a cada compra." />
-        <MoneyField name="price" label="Preço de venda por unidade" defaultValue={initial?.price} hint="Usado nos pedidos." />
-        <QtyField name="minStock" label="Estoque mínimo" defaultValue={initial?.minStock} hint="Abaixo disso o item aparece como “baixo”." />
-        {!initial && <QtyField name="initialStock" label="Saldo inicial (opcional)" hint="Quanto você já tem em estoque agora." />}
+        <TextField name="name" label="Nome do item" defaultValue={initial?.name} required maxLength={120} placeholder="Ex.: Picanha, Cerveja long neck, Carvão" autoFocus={!initial} />
+        <DatalistField name="groupName" label="Grupo" options={groups} defaultValue={initial?.groupName} required maxLength={40} hint="Carnes, Bebidas, Acompanhamentos…" />
+        <MoneyField name="cost" label="Custo" defaultValue={initial?.cost} hint="Atualizado a cada compra." />
+        <MoneyField name="price" label="Preço de venda" defaultValue={initial?.price} hint="Usado nos pedidos." />
       </FormGrid>
 
       <div className="grid gap-1 sm:grid-cols-3">

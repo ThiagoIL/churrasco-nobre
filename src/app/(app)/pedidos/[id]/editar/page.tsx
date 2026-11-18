@@ -4,8 +4,7 @@ import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
 import { catalogItems } from "@/lib/catalog";
 import { featureOn } from "@/lib/features";
-import { localParts } from "@/lib/dates";
-import { qtyToInput } from "@/lib/money";
+import { centsToInput, qtyToInput } from "@/lib/money";
 import { orderTitle } from "@/lib/order-utils";
 import { PageHeader } from "@/components/ui/primitives";
 import { OrderForm } from "@/app/(app)/pedidos/order-form";
@@ -22,10 +21,12 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
   if (order.status !== "OPEN") redirect(`/pedidos/${id}`);
 
   const customersEnabled = await featureOn("CLIENTES");
-  const [items, customers] = await Promise.all([
+  const [items, customers, tables] = await Promise.all([
     catalogItems({ sellable: true }),
     customersEnabled ? db.customer.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    db.diningTable.findMany({ where: { active: true }, select: { name: true } }),
   ]);
+  const tableNames = tables.map((t) => t.name).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
   // itens do pedido que saíram de venda continuam disponíveis para edição
   const known = new Set(items.map((i) => i.id));
   const missing = order.items.filter((l) => !known.has(l.itemId));
@@ -34,17 +35,16 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
     for (const i of extra) items.push({ id: i.id, name: i.name, unit: i.unit, groupName: i.groupName, code: i.code, priceCents: i.priceCents, costCents: i.costCents, stockMilli: i.stockQtyMilli, trackStock: i.trackStock });
   }
 
-  const sched = order.scheduledFor ? localParts(order.scheduledFor) : null;
   return (
     <>
       <PageHeader title="Editar pedido" description={orderTitle(order)} back={{ href: `/pedidos/${id}`, label: "Pedido" }} />
       <div className="max-w-5xl">
         <OrderForm
-          items={items} customers={customers} customersEnabled={customersEnabled}
+          items={items} customers={customers} tables={tableNames} customersEnabled={customersEnabled}
           initial={{
-            id: order.id, channel: order.channel, tableLabel: order.tableLabel ?? "", customerId: order.customerId ?? "",
+            id: order.id, channel: order.channel === "DELIVERY" ? "DELIVERY" : "TABLE", tableLabel: order.tableLabel ?? "", customerId: order.customerId ?? "",
             customerName: order.customerName ?? "", phone: order.phone ?? "", address: order.address ?? "",
-            scheduledFor: sched ? `${sched.date}T${sched.time}` : "", note: order.note ?? "",
+            freight: order.freightCents ? centsToInput(order.freightCents) : "", note: order.note ?? "",
             lines: order.items.map((l) => ({ itemId: l.itemId, qty: qtyToInput(l.qtyMilli) })),
           }}
         />

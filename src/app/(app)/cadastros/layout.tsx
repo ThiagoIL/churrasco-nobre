@@ -9,7 +9,7 @@ export default async function CadastrosLayout({ children }: { children: ReactNod
   const tail = extras.length === 0 ? "" : extras.length === 1 ? ` e ${extras[0]}` : `, ${extras[0]} e ${extras[1]}`;
   return (
     <>
-      <PageHeader title="Cadastros" description={`Itens para compra e venda, categorias e formas de pagamento${tail}.`} />
+      <PageHeader title="Cadastros" description={`Itens para compra e venda, categorias, formas de pagamento, mesas e comandas${tail}.`} />
       <CadastrosTabs features={features} />
       {children}
     </>

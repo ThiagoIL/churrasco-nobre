@@ -7,6 +7,7 @@ const TABS: { href: string; label: string; feature?: string }[] = [
   { href: "/cadastros/itens", label: "Itens e valores" },
   { href: "/cadastros/categorias", label: "Categorias financeiras" },
   { href: "/cadastros/pagamentos", label: "Formas de pagamento" },
+  { href: "/cadastros/mesas", label: "Mesas e comandas" },
   { href: "/cadastros/fornecedores", label: "Fornecedores", feature: "FORNECEDORES" },
   { href: "/cadastros/clientes", label: "Clientes", feature: "CLIENTES" },
 ];

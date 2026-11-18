@@ -8,6 +8,8 @@ const UNIQUE_MESSAGES: [string, string][] = [
   ["financial_categories_kind_name_key", "Já existe uma categoria com este nome."],
   ["payment_methods_name_ci", "Já existe uma forma de pagamento com este nome."],
   ["payment_methods_name_key", "Já existe uma forma de pagamento com este nome."],
+  ["dining_tables_name_ci", "Já existe uma mesa ou comanda com este nome."],
+  ["dining_tables_name_key", "Já existe uma mesa ou comanda com este nome."],
   ["suppliers_name_ci", "Já existe um fornecedor com este nome."],
   ["suppliers_name_key", "Já existe um fornecedor com este nome."],
   ["access_profiles_name_ci", "Já existe um perfil com este nome."],

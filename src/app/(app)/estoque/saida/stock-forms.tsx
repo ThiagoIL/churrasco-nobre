@@ -2,7 +2,7 @@
 
 import { ActionForm, FormGrid, QtyField, SelectField, StickyActions, SubmitButton, TextField } from "@/components/ui/form-kit";
 import { LineBuilder, type CatalogItem } from "@/components/line-builder";
-import { stockAdjustAction, stockOutAction } from "@/app/(app)/estoque/actions";
+import { stockAdjustAction, stockInitialAction, stockOutAction } from "@/app/(app)/estoque/actions";
 
 export function StockOutForm({ items }: { items: CatalogItem[] }) {
   return (
@@ -26,6 +26,15 @@ export function StockAdjustForm({ items }: { items: CatalogItem[] }) {
         <TextField name="note" label="Observação (opcional)" maxLength={200} span={2} placeholder="Ex.: Inventário de fim de mês" />
       </FormGrid>
       <SubmitButton variant="outline">Ajustar saldo</SubmitButton>
+    </ActionForm>
+  );
+}
+
+export function StockInitialForm({ items }: { items: CatalogItem[] }) {
+  return (
+    <ActionForm action={stockInitialAction} className="space-y-5" resetOnSuccess>
+      <LineBuilder items={items} mode="stock" key="stock-initial" title="Itens com saldo inicial" emptyHint="Nenhum item controla estoque. Ative “Controla estoque” em Cadastros › Itens." />
+      <StickyActions><SubmitButton size="lg">Lançar saldo inicial</SubmitButton></StickyActions>
     </ActionForm>
   );
 }

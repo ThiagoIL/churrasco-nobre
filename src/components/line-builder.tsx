@@ -32,9 +32,9 @@ const milliToText = (m: number) => (m / 1000).toFixed(3).replace(/0+$/, "").repl
  * o servidor revalida tudo e lê os preços no banco (nada do que vem daqui é confiado).
  */
 export function LineBuilder({
-  items, mode, initial = [], name = "lines", emptyHint,
+  items, mode, initial = [], name = "lines", emptyHint, title,
   onChange,
-}: { items: CatalogItem[]; mode: Mode; initial?: FormLine[]; name?: string; emptyHint?: string; onChange?: (summary: { total: number; count: number }) => void }) {
+}: { items: CatalogItem[]; mode: Mode; initial?: FormLine[]; name?: string; emptyHint?: string; title?: string; onChange?: (summary: { total: number; count: number }) => void }) {
   const [lines, setLines] = useState<FormLine[]>(initial);
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<string>("");
@@ -138,7 +138,7 @@ export function LineBuilder({
       {/* itens escolhidos */}
       <div className="rounded-xl border border-line bg-surface">
         <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
-          <h3 className="text-sm font-semibold">{mode === "stock" ? "Itens da saída" : mode === "purchase" ? "Itens comprados" : "Itens do pedido"}</h3>
+          <h3 className="text-sm font-semibold">{title ?? (mode === "stock" ? "Itens da saída" : mode === "purchase" ? "Itens comprados" : "Itens do pedido")}</h3>
           <span className="text-xs text-muted">{lines.length} {lines.length === 1 ? "item" : "itens"}</span>
         </div>
         {lines.length === 0 ? (

@@ -3,7 +3,7 @@
 import { ActionForm, FormGrid, SelectField, SubmitButton, TextField } from "@/components/ui/form-kit";
 import { LinkButton } from "@/components/ui/primitives";
 import {
-  saveCategoryAction, saveCustomerAction, savePaymentMethodAction, saveSupplierAction,
+  saveCategoryAction, saveCustomerAction, savePaymentMethodAction, saveSupplierAction, saveTableAction,
 } from "@/app/(app)/cadastros/actions";
 
 function Buttons({ editing, back }: { editing: boolean; back: string }) {
@@ -64,6 +64,18 @@ export function CustomerForm({ initial }: { initial?: { id: string; name: string
         <TextField name="phone" label="Telefone / WhatsApp" defaultValue={initial?.phone} type="tel" inputMode="tel" maxLength={30} />
         <TextField name="note" label="Observação" defaultValue={initial?.note} maxLength={300} />
         <Buttons editing={!!initial} back="/cadastros/clientes" />
+      </FormGrid>
+    </ActionForm>
+  );
+}
+
+export function TableForm({ initial }: { initial?: { id: string; name: string } }) {
+  return (
+    <ActionForm action={saveTableAction} resetOnSuccess className="space-y-3" key={initial?.id ?? "new"}>
+      {initial && <input type="hidden" name="id" value={initial.id} />}
+      <FormGrid cols={2}>
+        <TextField name="name" label="Mesa ou comanda" defaultValue={initial?.name} required maxLength={30} placeholder="Ex.: Mesa 7, Comanda 12, Varanda 2" autoFocus={!initial} />
+        <Buttons editing={!!initial} back="/cadastros/mesas" />
       </FormGrid>
     </ActionForm>
   );

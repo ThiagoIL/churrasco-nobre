@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Download, MinusCircle } from "lucide-react";
+import { Download, MinusCircle, PlusCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
-import { lineTotal, formatMoney, formatQty } from "@/lib/money";
+import { lineTotal, formatMoney, formatQty, qtyToInput } from "@/lib/money";
 import { stockLevel } from "@/lib/rules/stock";
 import { EmptyState, FilterBar, FilterField, LinkButton, LinkTabs, PageHeader, Pagination, Stat, param } from "@/components/ui/primitives";
 import { StockBadge } from "@/components/status-badges";
+import { MinStockForm } from "@/app/(app)/estoque/min-stock-form";
 
 export const metadata: Metadata = { title: "Estoque" };
 const PAGE_SIZE = 40;
@@ -24,7 +25,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     where: {
       active: true, trackStock: true,
       ...(grupo ? { groupName: grupo } : {}),
-      ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }] } : {}),
+      ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
     },
     orderBy: { name: "asc" },
     take: 3000,
@@ -43,8 +44,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Estoque"
-        description="Saldo atual de cada item. Compras entram, vendas e consumo saem."
-        actions={canEdit && <LinkButton href="/estoque/saida" variant="primary"><MinusCircle className="size-4" /> Lançar consumo / perda</LinkButton>}
+        description="Saldo atual de cada item. Compras entram, vendas e consumo saem. O estoque mínimo se define aqui."
+        actions={canEdit && <><LinkButton href="/estoque/saida#saldo-inicial" variant="outline"><PlusCircle className="size-4" /> Saldo inicial</LinkButton><LinkButton href="/estoque/saida" variant="primary"><MinusCircle className="size-4" /> Lançar consumo / perda</LinkButton></>}
       />
 
       <LinkTabs tabs={[{ href: "/estoque", label: "Saldo dos itens", active: true }, { href: "/estoque/movimentacoes", label: "Movimentações", active: false }, ...(canEdit ? [{ href: "/estoque/saida", label: "Consumo, perda e ajuste", active: false }] : [])]} />
@@ -57,7 +58,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
       </div>
 
       <FilterBar action="/estoque">
-        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Nome ou código" className="input" /></FilterField>
+        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Nome do item" className="input" /></FilterField>
         <FilterField label="Grupo"><select name="grupo" defaultValue={grupo} className="input"><option value="">Todos</option>{groups.map((g) => <option key={g} value={g}>{g}</option>)}</select></FilterField>
         <FilterField label="Situação">
           <select name="sit" defaultValue={sit} className="input">
@@ -82,8 +83,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
                 <tr key={i.id}>
                   <td className="font-medium"><Link href={`/estoque/movimentacoes?item=${i.id}`} className="hover:text-brand-700">{i.name}</Link></td>
                   <td className="text-muted">{i.groupName ?? "—"}</td>
-                  <td className="text-right font-medium tabular-nums">{formatQty(i.stockQtyMilli)} <span className="text-xs font-normal text-muted">{i.unit}</span></td>
-                  <td className="text-right tabular-nums text-muted">{i.minStockMilli ? `${formatQty(i.minStockMilli)} ${i.unit}` : "—"}</td>
+                  <td className="text-right font-medium tabular-nums">{formatQty(i.stockQtyMilli)}</td>
+                  <td className="text-right tabular-nums">{canEdit ? <MinStockForm itemId={i.id} itemName={i.name} value={i.minStockMilli ? qtyToInput(i.minStockMilli) : ""} /> : <span className="text-muted">{i.minStockMilli ? formatQty(i.minStockMilli) : "—"}</span>}</td>
                   <td className="text-right tabular-nums">{formatMoney(i.stockQtyMilli > 0 ? lineTotal(i.costCents, i.stockQtyMilli) : 0)}</td>
                   <td><StockBadge balance={i.stockQtyMilli} min={i.minStockMilli} /></td>
                 </tr>

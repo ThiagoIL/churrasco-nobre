@@ -297,6 +297,17 @@ model Supplier {
   @@map("suppliers")
 }
 
+/// Mesas e comandas cadastradas; o pedido de mesa escolhe uma delas.
+model DiningTable {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("dining_tables")
+}
+
 model Customer {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
@@ -494,6 +505,8 @@ model Order {
   scheduledFor    DateTime?    @map("scheduled_for") @db.Timestamptz(6)
   note            String?
   discountCents   Int          @default(0) @map("discount_cents")
+  /// Frete do delivery (soma ao total).
+  freightCents    Int          @default(0) @map("freight_cents")
   totalCents      Int          @default(0) @map("total_cents")
   paymentMethodId String?      @map("payment_method_id") @db.Uuid
   paidAt          DateTime?    @map("paid_at") @db.Timestamptz(6)

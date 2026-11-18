@@ -167,6 +167,17 @@ d("pedidos e compras", () => {
     expect(await fails(`UPDATE orders SET note = 'x' WHERE id = $1`, [o.id])).toMatch(/cancelado não pode ser alterado/);
     expect(await fails(`DELETE FROM orders WHERE id = $1`, [o.id])).toMatch(/não pode ser excluído/);
   });
+  it("frete: nunca negativo e fixo depois que o pedido é pago", async () => {
+    const o = await order();
+    expect(await fails(`UPDATE orders SET freight_cents = -1 WHERE id = $1`, [o.id])).toMatch(/orders_freight/);
+    expect(await fails(`UPDATE orders SET freight_cents = 500, total_cents = 500 WHERE id = $1`, [o.id])).toBeNull();
+    await client.query(`UPDATE orders SET status = 'PAID', paid_at = now() WHERE id = $1`, [o.id]);
+    expect(await fails(`UPDATE orders SET freight_cents = 0 WHERE id = $1`, [o.id])).toMatch(/pago não pode ser alterado/);
+  });
+  it("mesa/comanda: nome único sem diferenciar maiúsculas", async () => {
+    await client.query(`INSERT INTO dining_tables (name) VALUES ('Mesa 99')`);
+    expect(await fails(`INSERT INTO dining_tables (name) VALUES ('mesa 99')`)).toMatch(/dining_tables_name_ci/);
+  });
   it("pedido marcado como pago exige a data do pagamento", async () => {
     const o = await order();
     expect(await fails(`UPDATE orders SET status = 'PAID' WHERE id = $1`, [o.id])).toMatch(/orders_paid/);

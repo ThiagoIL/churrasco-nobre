@@ -24,7 +24,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
     active: situacao === "ativos" ? true : false,
     ...(uso === "compra" ? { purchasable: true } : uso === "venda" ? { sellable: true } : {}),
     ...(grupo ? { groupName: grupo } : {}),
-    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
   };
   const [total, items, groups] = await Promise.all([
     db.item.count({ where }),
@@ -40,7 +40,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
       </div>
 
       <FilterBar action="/cadastros/itens">
-        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Nome ou código" className="input" /></FilterField>
+        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Nome do item" className="input" /></FilterField>
         <FilterField label="Uso">
           <select name="uso" defaultValue={uso ?? ""} className="input"><option value="">Todos</option><option value="compra">Para compra</option><option value="venda">Para venda</option></select>
         </FilterField>
@@ -61,15 +61,12 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
             <tbody>
               {items.map((i) => (
                 <tr key={i.id} className={i.active ? undefined : "opacity-60"}>
-                  <td>
-                    <Link href={`/cadastros/itens/${i.id}`} className="font-medium hover:text-brand-700">{i.name}</Link>
-                    {i.code && <span className="ml-1.5 text-xs text-muted">#{i.code}</span>}
-                  </td>
+                  <td><Link href={`/cadastros/itens/${i.id}`} className="font-medium hover:text-brand-700">{i.name}</Link></td>
                   <td className="text-muted">{i.groupName ?? "—"}</td>
                   <td className="space-x-1">{i.purchasable && <Badge tone="blue">Compra</Badge>}{i.sellable && <Badge tone="gold">Venda</Badge>}</td>
-                  <td className="text-right tabular-nums">{formatMoney(i.costCents)}<span className="text-xs text-muted"> /{i.unit}</span></td>
-                  <td className="text-right tabular-nums">{i.sellable ? <>{formatMoney(i.priceCents)}<span className="text-xs text-muted"> /{i.unit}</span></> : "—"}</td>
-                  <td className="text-right tabular-nums">{i.trackStock ? `${formatQty(i.stockQtyMilli)} ${i.unit}` : <span className="text-muted">não controla</span>}</td>
+                  <td className="text-right tabular-nums">{formatMoney(i.costCents)}</td>
+                  <td className="text-right tabular-nums">{i.sellable ? formatMoney(i.priceCents) : "—"}</td>
+                  <td className="text-right tabular-nums">{i.trackStock ? formatQty(i.stockQtyMilli) : <span className="text-muted">não controla</span>}</td>
                   <td><RowActions entity="item" id={i.id} active={i.active} editHref={`/cadastros/itens/${i.id}`} canEdit={canEdit} /></td>
                 </tr>
               ))}

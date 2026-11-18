@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { runAction } from "@/lib/action";
 import { audit } from "@/lib/audit";
-import { UserError, optional, parseForm, quantity, requiredEnum, uuid, type FormState } from "@/lib/form";
+import { UserError, optional, optionalQuantity, parseForm, quantity, requiredEnum, uuid, type FormState } from "@/lib/form";
 import { parseLines } from "@/lib/lines";
 import { moveStock } from "@/lib/stock-service";
 
@@ -65,5 +65,50 @@ export async function stockAdjustAction(_: FormState, formData: FormData): Promi
       return { name: row.name, delta };
     });
     return { success: `Estoque de “${result.name}” ajustado (${result.delta > 0 ? "+" : "−"}${(Math.abs(result.delta) / 1000).toString().replace(".", ",")}).` };
+  });
+}
+
+/** Saldo inicial: quanto já existe em estoque ao começar a usar o sistema (entrada por ajuste, vários itens de uma vez). */
+export async function stockInitialAction(_: FormState, formData: FormData): Promise<FormState> {
+  return runAction("ESTOQUE", formData, async (user) => {
+    const parsed = parseForm(z.object({ lines: z.string().max(60_000).optional() }), formData);
+    if (parsed.state) return parsed.state;
+
+    let lines;
+    try {
+      lines = parseLines(parsed.data.lines);
+    } catch (error) {
+      throw new UserError((error as Error).message);
+    }
+    const items = await db.item.findMany({ where: { id: { in: lines.map((l) => l.itemId) } }, select: { id: true, name: true, active: true, trackStock: true } });
+    const byId = new Map(items.map((i) => [i.id, i]));
+    for (const l of lines) {
+      const item = byId.get(l.itemId);
+      if (!item || !item.active) throw new UserError("Um dos itens não está disponível.");
+      if (!item.trackStock) throw new UserError(`O item “${item.name}” não controla estoque.`);
+    }
+
+    await db.$transaction(async (tx) => {
+      for (const l of lines) {
+        await moveStock(tx, { itemId: l.itemId, direction: "IN", reason: "ADJUSTMENT", qtyMilli: l.qtyMilli, note: "Saldo inicial", createdById: user.id });
+      }
+      await audit({ action: "estoque.saldo_inicial", entity: "estoque", userId: user.id, actor: user.email, data: { itens: lines.length } }, tx);
+    });
+    return { success: `Saldo inicial lançado para ${lines.length} ${lines.length === 1 ? "item" : "itens"}.` };
+  });
+}
+
+/** Estoque mínimo de um item: abaixo dele o item aparece como “baixo”. Vazio ou 0 = sem mínimo. */
+export async function setMinStockAction(_: FormState, formData: FormData): Promise<FormState> {
+  return runAction("ESTOQUE", formData, async (user) => {
+    const parsed = parseForm(z.object({ itemId: uuid("o item"), minStock: optionalQuantity("Estoque mínimo") }), formData);
+    if (parsed.state) return parsed.state;
+    const { itemId, minStock } = parsed.data;
+    const item = await db.item.findUnique({ where: { id: itemId }, select: { name: true, minStockMilli: true } });
+    if (!item) throw new UserError("Item não encontrado.");
+    if (item.minStockMilli === minStock) return { success: "Mínimo mantido." };
+    await db.item.update({ where: { id: itemId }, data: { minStockMilli: minStock } });
+    await audit({ action: "estoque.minimo", entity: "item", entityId: itemId, userId: user.id, actor: user.email, data: { item: item.name, de: item.minStockMilli, para: minStock } });
+    return { success: "Mínimo salvo." };
   });
 }

@@ -44,6 +44,7 @@ const NAV: NavEntry[] = [
       { href: "/cadastros/itens", label: "Itens e valores", access: "CADASTROS" },
       { href: "/cadastros/categorias", label: "Categorias financeiras", access: "CADASTROS" },
       { href: "/cadastros/pagamentos", label: "Formas de pagamento", access: "CADASTROS" },
+      { href: "/cadastros/mesas", label: "Mesas e comandas", access: "CADASTROS" },
       { href: "/cadastros/fornecedores", label: "Fornecedores", access: "CADASTROS", feature: "FORNECEDORES" },
       { href: "/cadastros/clientes", label: "Clientes", access: "CADASTROS", feature: "CLIENTES" },
     ],

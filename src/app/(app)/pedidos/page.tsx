@@ -79,7 +79,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <FilterBar action="/pedidos">
         <input type="hidden" name="p" value={period.key} />
         {period.key === "periodo" && <><input type="hidden" name="de" value={period.from} /><input type="hidden" name="ate" value={period.to} /></>}
-        <FilterField label="Tipo"><select name="canal" defaultValue={canal ?? ""} className="input"><option value="">Todos</option><option value="TABLE">Mesa</option><option value="COUNTER">Balcão</option><option value="DELIVERY">Delivery</option><option value="CATERING">Encomenda</option></select></FilterField>
+        <FilterField label="Tipo"><select name="canal" defaultValue={canal ?? ""} className="input"><option value="">Todos</option><option value="TABLE">Mesa / comanda</option><option value="DELIVERY">Delivery</option></select></FilterField>
         <FilterField label="Situação"><select name="status" defaultValue={status ?? ""} className="input"><option value="">Todas</option><option value="OPEN">Abertos</option><option value="PAID">Pagos</option><option value="CANCELED">Cancelados</option></select></FilterField>
         <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Mesa, cliente ou nº" className="input" /></FilterField>
       </FilterBar>
