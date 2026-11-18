@@ -62,18 +62,42 @@ export async function setExpiryAction(_: FormState, formData: FormData): Promise
   });
 }
 
+type Actor = { id: string; name: string };
+
+async function applyModules(admin: Actor, formData: FormData) {
+  const enabled = MODULE_KEYS.filter((k) => formData.get(`mod_${k}`) === "on");
+  if (enabled.length === 0) throw new UserError("Deixe ao menos um módulo liberado.");
+  const before = await db.systemSettings.findUnique({ where: { id: "singleton" } });
+  const was = Array.isArray(before?.enabledModules) ? (before.enabledModules as string[]) : [];
+  await db.systemSettings.update({ where: { id: "singleton" }, data: { enabledModules: enabled } });
+  clearSettingsCache();
+  const added = enabled.filter((k) => !was.includes(k)).map(moduleLabel);
+  const removed = was.filter((k) => !enabled.includes(k as never)).map(moduleLabel);
+  if (added.length || removed.length) {
+    await recordPlatformEvent(admin, "modulos", `Módulos alterados${added.length ? ` · liberou: ${added.join(", ")}` : ""}${removed.length ? ` · desligou: ${removed.join(", ")}` : ""}`, { liberados: enabled });
+  }
+}
+
+async function applyFeatures(admin: Actor, formData: FormData) {
+  const enabled = FEATURE_KEYS.filter((k) => formData.get(`feat_${k}`) === "on");
+  const before = await db.systemSettings.findUnique({ where: { id: "singleton" } });
+  const was = Array.isArray(before?.enabledFeatures) ? (before.enabledFeatures as string[]) : [];
+  await db.systemSettings.update({ where: { id: "singleton" }, data: { enabledFeatures: enabled } });
+  clearSettingsCache();
+  const label = (k: string) => FEATURES.find((f) => f.key === k)?.label ?? k;
+  const added = enabled.filter((k) => !was.includes(k)).map(label);
+  const removed = was.filter((k) => !(enabled as string[]).includes(k)).map(label);
+  if (added.length || removed.length) {
+    await recordPlatformEvent(admin, "recursos", `Recursos alterados${added.length ? ` · ligou: ${added.join(", ")}` : ""}${removed.length ? ` · desligou: ${removed.join(", ")}` : ""}`, { ligados: enabled });
+  }
+}
+
+/** Salva de uma vez os módulos liberados e os recursos opcionais de cada módulo. */
 export async function setModulesAction(_: FormState, formData: FormData): Promise<FormState> {
   return runPlatformAction(formData, async (admin) => {
-    const enabled = MODULE_KEYS.filter((k) => formData.get(`mod_${k}`) === "on");
-    if (enabled.length === 0) throw new UserError("Deixe ao menos um módulo liberado.");
-    const before = await db.systemSettings.findUnique({ where: { id: "singleton" } });
-    await db.systemSettings.update({ where: { id: "singleton" }, data: { enabledModules: enabled } });
-    clearSettingsCache();
-    const was = Array.isArray(before?.enabledModules) ? (before.enabledModules as string[]) : [];
-    const added = enabled.filter((k) => !was.includes(k)).map(moduleLabel);
-    const removed = was.filter((k) => !enabled.includes(k as never)).map(moduleLabel);
-    await recordPlatformEvent(admin, "modulos", `Módulos alterados${added.length ? ` · liberou: ${added.join(", ")}` : ""}${removed.length ? ` · desligou: ${removed.join(", ")}` : ""}`, { liberados: enabled });
-    return { success: "Módulos atualizados." };
+    await applyModules(admin, formData);
+    await applyFeatures(admin, formData);
+    return { success: "Módulos e recursos atualizados." };
   });
 }
 
@@ -158,23 +182,5 @@ export async function updatePlatformProfileAction(_: FormState, formData: FormDa
     const changes = [row.name !== name ? "nome" : null, row.email !== newEmail ? "e-mail" : null].filter(Boolean).join(" e ");
     await recordPlatformEvent({ id: admin.id, name }, "perfil_alterado", `Alterou o próprio ${changes}`, { de: { nome: row.name, email: row.email }, para: { nome: name, email: newEmail } });
     return { success: "Dados atualizados. No próximo login use o e-mail novo." };
-  });
-}
-
-/** Liga ou desliga recursos opcionais (ex.: cadastro de clientes). */
-export async function setFeaturesAction(_: FormState, formData: FormData): Promise<FormState> {
-  return runPlatformAction(formData, async (admin) => {
-    const enabled = FEATURE_KEYS.filter((k) => formData.get(`feat_${k}`) === "on");
-    const before = await db.systemSettings.findUnique({ where: { id: "singleton" } });
-    const was = Array.isArray(before?.enabledFeatures) ? (before.enabledFeatures as string[]) : [];
-    await db.systemSettings.update({ where: { id: "singleton" }, data: { enabledFeatures: enabled } });
-    clearSettingsCache();
-    const label = (k: string) => FEATURES.find((f) => f.key === k)?.label ?? k;
-    const added = enabled.filter((k) => !was.includes(k)).map(label);
-    const removed = was.filter((k) => !(enabled as string[]).includes(k)).map(label);
-    if (added.length || removed.length) {
-      await recordPlatformEvent(admin, "recursos", `Recursos alterados${added.length ? ` · ligou: ${added.join(", ")}` : ""}${removed.length ? ` · desligou: ${removed.join(", ")}` : ""}`, { ligados: enabled });
-    }
-    return { success: "Recursos atualizados." };
   });
 }

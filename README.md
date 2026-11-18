@@ -16,7 +16,7 @@ pelo celular. Instalação única (um restaurante por instalação), instalável
 | **Pedidos** | Mesa, balcão, delivery e encomenda, com seletor de itens feito para o celular. Fechar o pedido gera a receita e baixa o estoque. |
 | **Cadastros** | Itens para compra e venda com valores, categorias financeiras, formas de pagamento, fornecedores e clientes (desativar em vez de excluir quando há histórico). |
 | **Administração** | Usuários, perfis de acesso por módulo (sem acesso / consulta / edita), auditoria completa. |
-| **Console do fornecedor** | Login e sessão separados, vários administradores, bloquear/liberar o cliente, vencimento com bloqueio automático, módulos liberados, **recursos opcionais** (ex.: cadastro de clientes, que começa **desligado**), histórico de eventos. |
+| **Console do fornecedor** | Login e sessão separados, vários administradores, bloquear/liberar o cliente, vencimento com bloqueio automático, módulos liberados, **recursos opcionais** dentro de cada módulo (cadastro de clientes e de fornecedores, que começam **desligados**), histórico de eventos. |
 
 ## Stack
 

@@ -7,11 +7,12 @@ type SP = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function parsePurchaseParams(sp: SP) {
+/** `suppliersOn`: recurso "Fornecedores" ligado; desligado, filtro e busca por fornecedor são ignorados. */
+export function parsePurchaseParams(sp: SP, suppliersOn = true) {
   const today = todayString();
   const period = resolvePeriod({ p: first(sp.p), de: first(sp.de), ate: first(sp.ate) }, today);
   const supplierRaw = first(sp.fornecedor);
-  const supplier = supplierRaw && uuidRe.test(supplierRaw) ? supplierRaw : undefined;
+  const supplier = suppliersOn && supplierRaw && uuidRe.test(supplierRaw) ? supplierRaw : undefined;
   const statusRaw = first(sp.status);
   const status = statusRaw === "pagas" || statusRaw === "apagar" || statusRaw === "canceladas" ? statusRaw : undefined;
   const q = (first(sp.q) ?? "").trim().slice(0, 80);
@@ -21,7 +22,7 @@ export function parsePurchaseParams(sp: SP) {
     date: { gte: dateOnly(period.from), lte: dateOnly(period.to) },
     ...(supplier ? { supplierId: supplier } : {}),
     ...(status === "canceladas" ? { status: "CANCELED" } : { status: "RECEIVED", ...(status === "pagas" ? { paid: true } : status === "apagar" ? { paid: false } : {}) }),
-    ...(q ? { OR: [{ invoiceNumber: { contains: q, mode: "insensitive" } }, { supplier: { name: { contains: q, mode: "insensitive" } } }, { note: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(q ? { OR: [{ invoiceNumber: { contains: q, mode: "insensitive" } }, ...(suppliersOn ? [{ supplier: { name: { contains: q, mode: "insensitive" as const } } }] : []), { note: { contains: q, mode: "insensitive" } }] } : {}),
   };
   return { today, period, supplier, status, q, page, where };
 }

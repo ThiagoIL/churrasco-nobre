@@ -13,6 +13,7 @@ import { cancelPurchaseAction } from "@/app/(app)/compras/actions";
 import { payEntryAction } from "@/app/(app)/financeiro/actions";
 import { hasAccess } from "@/lib/access";
 import { getAccess } from "@/lib/auth";
+import { featureOn } from "@/lib/features";
 
 export const metadata: Metadata = { title: "Compra" };
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,6 +21,7 @@ const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export default async function PurchasePage({ params }: { params: Promise<{ id: string }> }) {
   const { canEdit } = await requireModule("COMPRAS");
   const { id } = await params;
+  const suppliersOn = await featureOn("FORNECEDORES");
   if (!uuidRe.test(id)) notFound();
   const purchase = await db.purchase.findUnique({
     where: { id },
@@ -84,7 +86,7 @@ export default async function PurchasePage({ params }: { params: Promise<{ id: s
           <Card title="Dados da compra">
             <dl className="space-y-3 text-sm">
               <div><dt className="text-xs text-muted">Data</dt><dd>{formatDate(dateOnlyToString(purchase.date))}</dd></div>
-              <div><dt className="text-xs text-muted">Fornecedor</dt><dd>{purchase.supplier?.name ?? "—"}</dd></div>
+              {suppliersOn && <div><dt className="text-xs text-muted">Fornecedor</dt><dd>{purchase.supplier?.name ?? "—"}</dd></div>}
               <div><dt className="text-xs text-muted">Forma de pagamento</dt><dd>{purchase.paymentMethod?.name ?? "—"}</dd></div>
               <div><dt className="text-xs text-muted">Categoria da despesa</dt><dd>{purchase.category.name}</dd></div>
               {purchase.invoiceNumber && <div><dt className="text-xs text-muted">Nota fiscal</dt><dd>{purchase.invoiceNumber}</dd></div>}

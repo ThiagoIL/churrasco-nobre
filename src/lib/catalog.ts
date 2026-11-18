@@ -15,12 +15,12 @@ export async function catalogItems(where: { sellable?: true; purchasable?: true;
 
 /** Opções (id, nome) de cadastros ativos para campos de seleção. */
 export async function selectOptions() {
-  const customersEnabled = await featureOn("CLIENTES");
+  const [customersEnabled, suppliersEnabled] = await Promise.all([featureOn("CLIENTES"), featureOn("FORNECEDORES")]);
   const [categories, methods, suppliers, customers] = await Promise.all([
     db.financialCategory.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true, isSystem: true } }),
     db.paymentMethod.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    db.supplier.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    suppliersEnabled ? db.supplier.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     customersEnabled ? db.customer.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
   ]);
-  return { categories, methods, suppliers, customers, customersEnabled };
+  return { categories, methods, suppliers, customers, customersEnabled, suppliersEnabled };
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Download, Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
+import { featureOn } from "@/lib/features";
 import { parsePurchaseParams } from "@/lib/purchase-params";
 import { dateOnlyToString, formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -14,7 +15,8 @@ const PAGE_SIZE = 30;
 
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { canEdit } = await requireModule("COMPRAS");
-  const { period, supplier, status, q, page, where } = parsePurchaseParams(await searchParams);
+  const suppliersOn = await featureOn("FORNECEDORES");
+  const { period, supplier, status, q, page, where } = parsePurchaseParams(await searchParams, suppliersOn);
 
   const [total, purchases, suppliers, sums] = await Promise.all([
     db.purchase.count({ where }),
@@ -22,7 +24,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
       where, orderBy: [{ date: "desc" }, { number: "desc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
       include: { supplier: { select: { name: true } }, _count: { select: { items: true } } },
     }),
-    db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    suppliersOn ? db.supplier.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
     db.purchase.aggregate({ where, _sum: { totalCents: true }, _count: true }),
   ]);
 
@@ -46,13 +48,15 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
       <FilterBar action="/compras">
         <input type="hidden" name="p" value={period.key} />
         {period.key === "periodo" && <><input type="hidden" name="de" value={period.from} /><input type="hidden" name="ate" value={period.to} /></>}
-        <FilterField label="Fornecedor">
-          <select name="fornecedor" defaultValue={supplier ?? ""} className="input"><option value="">Todos</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-        </FilterField>
+        {suppliersOn && (
+          <FilterField label="Fornecedor">
+            <select name="fornecedor" defaultValue={supplier ?? ""} className="input"><option value="">Todos</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+          </FilterField>
+        )}
         <FilterField label="Situação">
           <select name="status" defaultValue={status ?? ""} className="input"><option value="">Todas (exceto canceladas)</option><option value="pagas">Pagas</option><option value="apagar">A pagar</option><option value="canceladas">Canceladas</option></select>
         </FilterField>
-        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder="Fornecedor, nota ou observação" className="input" /></FilterField>
+        <FilterField label="Buscar" className="min-w-52 flex-1"><input type="search" name="q" defaultValue={q} placeholder={suppliersOn ? "Fornecedor, nota ou observação" : "Nota ou observação"} className="input" /></FilterField>
       </FilterBar>
 
       <div className="mb-3 flex justify-end">
@@ -64,13 +68,13 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
       ) : (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Nº</th><th>Data</th><th>Fornecedor</th><th>Itens</th><th className="text-right">Total</th><th>Situação</th></tr></thead>
+            <thead><tr><th>Nº</th><th>Data</th>{suppliersOn && <th>Fornecedor</th>}<th>Itens</th><th className="text-right">Total</th><th>Situação</th></tr></thead>
             <tbody>
               {purchases.map((p) => (
                 <tr key={p.id} className={p.status === "CANCELED" ? "opacity-60" : undefined}>
                   <td><Link href={`/compras/${p.id}`} className="font-medium text-brand-700 hover:underline">#{p.number}</Link></td>
                   <td>{formatDate(dateOnlyToString(p.date))}</td>
-                  <td>{p.supplier?.name ?? <span className="text-muted">—</span>}</td>
+                  {suppliersOn && <td>{p.supplier?.name ?? <span className="text-muted">—</span>}</td>}
                   <td>{p._count.items}</td>
                   <td className="text-right font-medium tabular-nums">{formatMoney(p.totalCents)}</td>
                   <td><PurchaseStatusBadge status={p.status} paid={p.paid} /></td>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireModule } from "@/lib/auth";
+import { featureOn } from "@/lib/features";
 import { dashboardData, variation } from "@/lib/dashboard-queries";
 import { resolvePeriod } from "@/lib/period";
 import { todayString } from "@/lib/dates";
@@ -14,6 +15,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireModule("DASHBOARD");
+  const suppliersOn = await featureOn("FORNECEDORES");
   const sp = await searchParams;
   const today = todayString();
   const period = resolvePeriod({ p: param(sp.p), de: param(sp.de), ate: param(sp.ate) }, today);
@@ -63,7 +65,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             tone="income" empty="Nenhum pedido pago no período."
           />
         </Card>
-        <Card title="Compras por fornecedor"><HBars rows={d.purchasesBySupplier} empty="Nenhuma compra no período." /></Card>
+        {suppliersOn && <Card title="Compras por fornecedor"><HBars rows={d.purchasesBySupplier} empty="Nenhuma compra no período." /></Card>}
 
         <Card title={`Estoque em alerta (${d.stockAlertCount})`} className="lg:col-span-3" padded={false}>
           {d.stockAlerts.length === 0 ? (

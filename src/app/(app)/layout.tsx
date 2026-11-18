@@ -36,6 +36,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       access={{ isAdmin: user.role === "ADMIN", levels }}
       userName={user.name}
       companyName={settings.companyName}
+      features={settings.features}
     >
       {children}
     </AppShell>

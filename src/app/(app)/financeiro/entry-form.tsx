@@ -31,10 +31,12 @@ export type EntryFormProps = {
   today: string;
   /** Recurso opcional "Clientes" ligado no console. */
   customersEnabled?: boolean;
+  /** Recurso opcional "Fornecedores" ligado no console. */
+  suppliersEnabled?: boolean;
 };
 
 /** Lançamento rápido: tipo, valor, descrição e categoria; o resto é opcional. */
-export function EntryForm({ categories, methods, suppliers, customers, initial, initialKind, today, customersEnabled = false }: EntryFormProps) {
+export function EntryForm({ categories, methods, suppliers, customers, initial, initialKind, today, customersEnabled = false, suppliersEnabled = false }: EntryFormProps) {
   const [kind, setKind] = useState<"INCOME" | "EXPENSE">(initial?.kind ?? initialKind);
   const [paid, setPaid] = useState(initial?.paid ?? true);
   const options = useMemo(() => categories.filter((c) => c.kind === kind).map((c) => ({ value: c.id, label: c.name })), [categories, kind]);
@@ -73,7 +75,7 @@ export function EntryForm({ categories, methods, suppliers, customers, initial, 
         <SelectField name="paymentMethodId" label="Forma de pagamento" options={methods.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.paymentMethodId ?? ""} placeholder="Não informar" />
         {income ? (customersEnabled ? (
           <SelectField name="customerId" label="Cliente (opcional)" options={customers.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.customerId ?? ""} placeholder="Não informar" />
-        ) : <div className="hidden sm:block" />) : (
+        ) : <div className="hidden sm:block" />) : !suppliersEnabled ? <div className="hidden sm:block" /> : (
           <SelectField name="supplierId" label="Fornecedor (opcional)" options={suppliers.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.supplierId ?? ""} placeholder="Não informar" />
         )}
         <div className="self-end">

@@ -137,5 +137,6 @@ describe("recursos opcionais", () => {
     expect(parseEnabledFeatures([])).toEqual([]);
     expect(parseEnabledFeatures(null)).toEqual([]);
     expect(parseEnabledFeatures(["CLIENTES", "XYZ"])).toEqual(["CLIENTES"]);
+    expect(parseEnabledFeatures(["FORNECEDORES", "CLIENTES"])).toEqual(["CLIENTES", "FORNECEDORES"]);
   });
 });

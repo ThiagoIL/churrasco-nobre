@@ -33,6 +33,7 @@ export async function saveEntryAction(_: FormState, formData: FormData): Promise
     if (parsed.state) return parsed.state;
     const d = parsed.data;
     const customersOn = await featureOn("CLIENTES");
+    const suppliersOn = await featureOn("FORNECEDORES");
 
     const category = await db.financialCategory.findUnique({ where: { id: d.categoryId } });
     if (!category || !category.active) throw new UserError("Escolha uma categoria ativa.", { categoryId: "Categoria inválida" });
@@ -47,7 +48,8 @@ export async function saveEntryAction(_: FormState, formData: FormData): Promise
       categoryId: d.categoryId,
       paymentMethodId: d.paymentMethodId,
       // fornecedor só em despesa e cliente só em receita
-      supplierId: d.kind === "EXPENSE" ? d.supplierId : null,
+      // (desligado, não mexe no que já estava gravado)
+      ...(suppliersOn ? { supplierId: d.kind === "EXPENSE" ? d.supplierId : null } : {}),
       customerId: d.kind === "INCOME" && customersOn ? d.customerId : null,
       note: d.note,
     };

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getAccess } from "@/lib/auth";
 import { hasAccess } from "@/lib/access";
+import { featureOn } from "@/lib/features";
 import { audit } from "@/lib/audit";
 import { csvMoney, csvQty, csvResponse, toCsv } from "@/lib/csv";
 import { parsePurchaseParams } from "@/lib/purchase-params";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const access = await getAccess();
   if (!hasAccess(access, "COMPRAS")) return new Response("Sem acesso", { status: 403 });
-  const { where, period } = parsePurchaseParams(Object.fromEntries(request.nextUrl.searchParams.entries()));
+  const suppliersOn = await featureOn("FORNECEDORES");
+  const { where, period } = parsePurchaseParams(Object.fromEntries(request.nextUrl.searchParams.entries()), suppliersOn);
 
   const purchases = await db.purchase.findMany({
     where, orderBy: [{ date: "asc" }, { number: "asc" }], take: 5000,

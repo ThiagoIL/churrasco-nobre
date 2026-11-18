@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Novo lançamento" };
 export default async function NewEntryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireModule("FINANCEIRO", "EDIT");
   const tipo = param((await searchParams).tipo);
-  const { categories, methods, suppliers, customers, customersEnabled } = await selectOptions();
+  const { categories, methods, suppliers, customers, customersEnabled, suppliersEnabled } = await selectOptions();
   return (
     <>
       <PageHeader title="Novo lançamento" back={{ href: "/financeiro", label: "Financeiro" }} description="Receita ou despesa: informe o valor, uma descrição e a categoria." />
@@ -21,6 +21,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
           suppliers={suppliers}
           customers={customers}
           customersEnabled={customersEnabled}
+          suppliersEnabled={suppliersEnabled}
           initialKind={tipo === "despesa" ? "EXPENSE" : "INCOME"}
           today={todayString()}
         />

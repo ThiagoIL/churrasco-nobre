@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
+import { requireFeature } from "@/lib/features";
 import { Badge, Card, EmptyState, SearchBar, param } from "@/components/ui/primitives";
 import { SupplierForm } from "@/components/simple-forms";
 import { RowActions } from "@/components/row-actions";
@@ -9,6 +10,7 @@ export const metadata: Metadata = { title: "Fornecedores" };
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { canEdit } = await requireModule("CADASTROS");
+  await requireFeature("FORNECEDORES");
   const sp = await searchParams;
   const edit = param(sp.edit);
   const q = (param(sp.q) ?? "").trim().slice(0, 80);

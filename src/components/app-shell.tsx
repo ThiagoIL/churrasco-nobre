@@ -14,7 +14,7 @@ import { MobileTables } from "@/components/mobile-tables";
 import { InstallButton } from "@/components/install-button";
 import { moduleForPath, type Access, type Level, type ModuleKey } from "@/lib/modules";
 
-type NavItem = { href: string; label: string; access?: Access };
+type NavItem = { href: string; label: string; access?: Access; /** recurso opcional que precisa estar ligado no console */ feature?: string };
 type NavEntry =
   | { type: "link"; id: string; icon: LucideIcon; item: NavItem }
   | { type: "group"; id: string; title: string; icon: LucideIcon; items: NavItem[] };
@@ -44,8 +44,8 @@ const NAV: NavEntry[] = [
       { href: "/cadastros/itens", label: "Itens e valores", access: "CADASTROS" },
       { href: "/cadastros/categorias", label: "Categorias financeiras", access: "CADASTROS" },
       { href: "/cadastros/pagamentos", label: "Formas de pagamento", access: "CADASTROS" },
-      { href: "/cadastros/fornecedores", label: "Fornecedores", access: "CADASTROS" },
-      { href: "/cadastros/clientes", label: "Clientes", access: "CADASTROS" },
+      { href: "/cadastros/fornecedores", label: "Fornecedores", access: "CADASTROS", feature: "FORNECEDORES" },
+      { href: "/cadastros/clientes", label: "Clientes", access: "CADASTROS", feature: "CLIENTES" },
     ],
   },
   {
@@ -82,8 +82,8 @@ const QUICK_ACTIONS: QuickAction[] = [
 export type ShellAccess = { isAdmin: boolean; levels: Record<ModuleKey, Level> };
 
 export function AppShell({
-  children, footer, access, userName, companyName,
-}: { children: ReactNode; footer: ReactNode; access: ShellAccess; userName: string; companyName: string }) {
+  children, footer, access, userName, companyName, features = [],
+}: { children: ReactNode; footer: ReactNode; access: ShellAccess; userName: string; companyName: string; features?: string[] }) {
   const [open, setOpen] = useState(false);
   const [quick, setQuick] = useState(false);
   const pathname = usePathname();
@@ -95,7 +95,8 @@ export function AppShell({
   }, [pathname]);
 
   const canSee = (item: NavItem) =>
-    !item.access || (item.access === "ADMIN" ? access.isAdmin : access.levels[item.access] !== "NONE");
+    (!item.feature || features.includes(item.feature)) &&
+    (!item.access || (item.access === "ADMIN" ? access.isAdmin : access.levels[item.access] !== "NONE"));
 
   // Perfil só de consulta no módulo da tela atual: formulários ficam desabilitados.
   const current = moduleForPath(pathname);

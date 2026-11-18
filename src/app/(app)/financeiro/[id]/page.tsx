@@ -35,7 +35,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const today = todayString();
   const date = dateOnlyToString(entry.date);
   const editable = canEdit && entry.source === "MANUAL" && entry.status !== "CANCELED";
-  const { categories, methods, suppliers, customers, customersEnabled } = await selectOptions();
+  const { categories, methods, suppliers, customers, customersEnabled, suppliersEnabled } = await selectOptions();
 
   return (
     <>
@@ -50,7 +50,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           {editable ? (
             <Card title="Editar lançamento">
               <EntryForm
-                categories={categories} methods={methods} suppliers={suppliers} customers={customers} customersEnabled={customersEnabled}
+                categories={categories} methods={methods} suppliers={suppliers} customers={customers} customersEnabled={customersEnabled} suppliersEnabled={suppliersEnabled}
                 initialKind={entry.kind} today={today}
                 initial={{
                   id: entry.id, kind: entry.kind, amount: centsToInput(entry.amountCents), description: entry.description,
@@ -66,7 +66,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
                 <div><dt className="text-xs text-muted">Data</dt><dd>{formatDate(date)}</dd></div>
                 <div><dt className="text-xs text-muted">Categoria</dt><dd>{entry.category.name}</dd></div>
                 <div><dt className="text-xs text-muted">Forma de pagamento</dt><dd>{entry.paymentMethod?.name ?? "—"}</dd></div>
-                {entry.supplier && <div><dt className="text-xs text-muted">Fornecedor</dt><dd>{entry.supplier.name}</dd></div>}
+                {suppliersEnabled && entry.supplier && <div><dt className="text-xs text-muted">Fornecedor</dt><dd>{entry.supplier.name}</dd></div>}
                 {entry.customer && <div><dt className="text-xs text-muted">Cliente</dt><dd>{entry.customer.name}</dd></div>}
                 {entry.note && <div className="sm:col-span-2"><dt className="text-xs text-muted">Observação</dt><dd className="whitespace-pre-wrap">{entry.note}</dd></div>}
               </dl>

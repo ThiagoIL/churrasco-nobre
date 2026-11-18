@@ -10,6 +10,7 @@ import { dateOnly } from "@/lib/dates";
 import { MAX_CENTS, formatMoney, lineTotal } from "@/lib/money";
 import { moveStock } from "@/lib/stock-service";
 import { validateUpload } from "@/lib/uploads";
+import { featureOn } from "@/lib/features";
 
 const schema = z.object({
   date: dateField("Data"),
@@ -48,6 +49,8 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
       if (!check.ok) throw new UserError(check.error, { file: check.error });
       upload = { bytes, fileName: check.fileName, contentType: check.contentType };
     }
+    // com o recurso "Fornecedores" desligado, o fornecedor é ignorado mesmo que venha no envio
+    const supplierId = (await featureOn("FORNECEDORES")) ? d.supplierId : null;
     if (!d.paid && !d.dueDate) throw new UserError("Informe o vencimento da compra a pagar.", { dueDate: "Informe o vencimento" });
 
     const category = await db.financialCategory.findUnique({ where: { id: d.categoryId } });
@@ -70,7 +73,7 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
       const purchase = await tx.purchase.create({
         data: {
           date: dateOnly(d.date),
-          supplierId: d.supplierId,
+          supplierId,
           categoryId: d.categoryId,
           paymentMethodId: d.paymentMethodId,
           paid: d.paid,
@@ -83,7 +86,7 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
         },
       });
 
-      const supplierName = d.supplierId ? (await tx.supplier.findUnique({ where: { id: d.supplierId }, select: { name: true } }))?.name : null;
+      const supplierName = supplierId ? (await tx.supplier.findUnique({ where: { id: supplierId }, select: { name: true } }))?.name : null;
       await tx.financialEntry.create({
         data: {
           kind: "EXPENSE",
@@ -93,7 +96,7 @@ export async function createPurchaseAction(_: FormState, formData: FormData): Pr
           date: dateOnly(d.paid ? d.date : d.dueDate!),
           categoryId: d.categoryId,
           paymentMethodId: d.paymentMethodId,
-          supplierId: d.supplierId,
+          supplierId,
           note: d.invoiceNumber ? `NF ${d.invoiceNumber}` : null,
           source: "PURCHASE",
           purchaseId: purchase.id,

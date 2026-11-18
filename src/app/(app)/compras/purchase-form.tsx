@@ -9,8 +9,8 @@ import { createPurchaseAction } from "@/app/(app)/compras/actions";
 type Opt = { id: string; name: string };
 
 export function PurchaseForm({
-  items, suppliers, categories, methods, defaultCategoryId, today,
-}: { items: CatalogItem[]; suppliers: Opt[]; categories: Opt[]; methods: Opt[]; defaultCategoryId: string; today: string }) {
+  items, suppliers, categories, methods, defaultCategoryId, today, suppliersEnabled = false,
+}: { items: CatalogItem[]; suppliers: Opt[]; categories: Opt[]; methods: Opt[]; defaultCategoryId: string; today: string; /** recurso opcional "Fornecedores" ligado no console */ suppliersEnabled?: boolean }) {
   const [paid, setPaid] = useState(true);
   const [summary, setSummary] = useState({ total: 0, count: 0 });
   const onChange = useCallback((s: { total: number; count: number }) => setSummary(s), []);
@@ -18,10 +18,10 @@ export function PurchaseForm({
   return (
     <ActionForm action={createPurchaseAction} className="space-y-6">
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">1 · Quem vendeu e quando</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{suppliersEnabled ? "1 · Quem vendeu e quando" : "1 · Quando"}</h2>
         <FormGrid cols={2}>
           <TextField name="date" label="Data da compra" type="date" defaultValue={today} required />
-          <SelectField name="supplierId" label="Fornecedor (opcional)" options={suppliers.map((s) => ({ value: s.id, label: s.name }))} placeholder="Não informar" />
+          {suppliersEnabled && <SelectField name="supplierId" label="Fornecedor (opcional)" options={suppliers.map((s) => ({ value: s.id, label: s.name }))} placeholder="Não informar" />}
         </FormGrid>
       </section>
 

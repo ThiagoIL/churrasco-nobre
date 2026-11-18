@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Nova compra" };
 
 export default async function NewPurchasePage() {
   await requireModule("COMPRAS", "EDIT");
-  const [items, { categories, methods, suppliers }, defaultCategory] = await Promise.all([
+  const [items, { categories, methods, suppliers, suppliersEnabled }, defaultCategory] = await Promise.all([
     catalogItems({ purchasable: true }),
     selectOptions(),
     db.financialCategory.findFirst({ where: { isSystem: true, kind: SYSTEM_CATEGORIES.PURCHASES.kind, name: SYSTEM_CATEGORIES.PURCHASES.name } }),
@@ -21,7 +21,7 @@ export default async function NewPurchasePage() {
     <>
       <PageHeader title="Nova compra" back={{ href: "/compras", label: "Compras" }} description="O que você comprar entra no estoque e vira despesa automaticamente." />
       <div className="max-w-4xl">
-        <PurchaseForm items={items} suppliers={suppliers} categories={expense} methods={methods} defaultCategoryId={defaultCategory?.id ?? expense[0]?.id ?? ""} today={todayString()} />
+        <PurchaseForm items={items} suppliers={suppliers} suppliersEnabled={suppliersEnabled} categories={expense} methods={methods} defaultCategoryId={defaultCategory?.id ?? expense[0]?.id ?? ""} today={todayString()} />
       </div>
     </>
   );

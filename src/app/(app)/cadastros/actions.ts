@@ -57,6 +57,7 @@ export async function savePaymentMethodAction(_: FormState, formData: FormData):
 
 export async function saveSupplierAction(_: FormState, formData: FormData): Promise<FormState> {
   return runAction("CADASTROS", formData, async (user) => {
+    if (!(await featureOn("FORNECEDORES"))) throw new UserError("O cadastro de fornecedores não está liberado neste sistema.");
     const parsed = parseForm(z.object({ id: optionalUuid(), name: required("Nome", 120), phone: optional(30), document: optional(30), note: optional(300) }), formData);
     if (parsed.state) return parsed.state;
     const { id, ...data } = parsed.data;

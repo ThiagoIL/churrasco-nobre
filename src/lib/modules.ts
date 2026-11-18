@@ -15,6 +15,7 @@ export const MODULES = [
  */
 export const FEATURES = [
   { key: "CLIENTES", label: "Cadastro de clientes", module: "CADASTROS", description: "Aba Clientes em Cadastros e a escolha de cliente em pedidos de entrega/encomenda e receitas. Desligado, o nome do cliente do pedido continua sendo digitado." },
+  { key: "FORNECEDORES", label: "Cadastro de fornecedores", module: "CADASTROS", description: "Aba Fornecedores em Cadastros, a escolha de fornecedor em compras e despesas e o gráfico de compras por fornecedor. Desligado, as compras continuam sendo registradas normalmente, sem fornecedor." },
 ] as const;
 
 export type FeatureKey = (typeof FEATURES)[number]["key"];
