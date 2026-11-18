@@ -3,15 +3,20 @@
 import { usePathname } from "next/navigation";
 import { LinkTabs } from "@/components/ui/primitives";
 
-const TABS = [
+const TABS: { href: string; label: string; feature?: string }[] = [
   { href: "/cadastros/itens", label: "Itens e valores" },
   { href: "/cadastros/categorias", label: "Categorias financeiras" },
   { href: "/cadastros/pagamentos", label: "Formas de pagamento" },
   { href: "/cadastros/fornecedores", label: "Fornecedores" },
-  { href: "/cadastros/clientes", label: "Clientes" },
+  { href: "/cadastros/clientes", label: "Clientes", feature: "CLIENTES" },
 ];
 
-export function CadastrosTabs() {
+/** `features`: recursos opcionais ligados no console; a aba de um recurso desligado não aparece. */
+export function CadastrosTabs({ features }: { features: string[] }) {
   const pathname = usePathname();
-  return <LinkTabs tabs={TABS.map((t) => ({ ...t, active: pathname === t.href || pathname.startsWith(`${t.href}/`) }))} />;
+  return (
+    <LinkTabs
+      tabs={TABS.filter((t) => !t.feature || features.includes(t.feature)).map(({ href, label }) => ({ href, label, active: pathname === href || pathname.startsWith(`${href}/`) }))}
+    />
+  );
 }

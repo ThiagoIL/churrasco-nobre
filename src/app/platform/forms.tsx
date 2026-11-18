@@ -1,10 +1,10 @@
 "use client";
 
 import { ActionForm, ButtonForm, FormGrid, SubmitButton, TextField, TextareaField } from "@/components/ui/form-kit";
-import { MODULES } from "@/lib/modules";
+import { FEATURES, MODULES } from "@/lib/modules";
 import {
   blockSystemAction, changePlatformPasswordAction, createPlatformAdminAction, platformLoginAction, resetPlatformAdminPasswordAction,
-  setExpiryAction, setModulesAction, togglePlatformAdminAction, unblockSystemAction, updatePlatformProfileAction,
+  setExpiryAction, setFeaturesAction, setModulesAction, togglePlatformAdminAction, unblockSystemAction, updatePlatformProfileAction,
 } from "@/app/platform/actions";
 
 export function PlatformLoginForm() {
@@ -104,6 +104,24 @@ export function PlatformProfileForm({ name, email }: { name: string; email: stri
       <TextField name="email" label="E-mail (é o login)" type="email" inputMode="email" autoComplete="off" defaultValue={email} required />
       <TextField name="current" label="Senha atual (para confirmar)" type="password" autoComplete="current-password" maxLength={200} required />
       <SubmitButton>Salvar dados</SubmitButton>
+    </ActionForm>
+  );
+}
+
+export function FeaturesForm({ enabled }: { enabled: string[] }) {
+  return (
+    <ActionForm action={setFeaturesAction} className="space-y-4">
+      <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
+        {FEATURES.map((f) => (
+          <li key={f.key}>
+            <label className="flex min-h-14 cursor-pointer items-start gap-3 px-4 py-3">
+              <input type="checkbox" name={`feat_${f.key}`} defaultChecked={enabled.includes(f.key)} className="mt-0.5 size-5 accent-brand-600" />
+              <span><span className="block text-sm font-medium">{f.label}</span><span className="block text-xs text-muted">{f.description}</span></span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <SubmitButton>Salvar recursos</SubmitButton>
     </ActionForm>
   );
 }

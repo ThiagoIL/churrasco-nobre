@@ -78,6 +78,8 @@ model SystemSettings {
   blockedAt      DateTime? @map("blocked_at") @db.Timestamptz(6)
   /// Módulos liberados para a empresa (lista de chaves).
   enabledModules Json      @map("enabled_modules")
+  /// Recursos opcionais ligados pelo fornecedor (ex.: "CLIENTES"). Começam desligados.
+  enabledFeatures Json     @default("[]") @map("enabled_features")
   /// Vencimento da licença: depois desta data o acesso é bloqueado automaticamente.
   expiresOn      DateTime? @map("expires_on") @db.Date
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

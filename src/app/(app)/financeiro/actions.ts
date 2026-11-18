@@ -9,6 +9,7 @@ import {
 } from "@/lib/form";
 import { dateOnly, todayString } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { featureOn } from "@/lib/features";
 
 const entrySchema = z.object({
   id: optionalUuid(),
@@ -31,6 +32,7 @@ export async function saveEntryAction(_: FormState, formData: FormData): Promise
     const parsed = parseForm(entrySchema, formData);
     if (parsed.state) return parsed.state;
     const d = parsed.data;
+    const customersOn = await featureOn("CLIENTES");
 
     const category = await db.financialCategory.findUnique({ where: { id: d.categoryId } });
     if (!category || !category.active) throw new UserError("Escolha uma categoria ativa.", { categoryId: "Categoria inválida" });
@@ -46,7 +48,7 @@ export async function saveEntryAction(_: FormState, formData: FormData): Promise
       paymentMethodId: d.paymentMethodId,
       // fornecedor só em despesa e cliente só em receita
       supplierId: d.kind === "EXPENSE" ? d.supplierId : null,
-      customerId: d.kind === "INCOME" ? d.customerId : null,
+      customerId: d.kind === "INCOME" && customersOn ? d.customerId : null,
       note: d.note,
     };
 

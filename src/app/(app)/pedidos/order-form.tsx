@@ -22,7 +22,7 @@ export type OrderFormInitial = {
   scheduledFor: string; note: string; lines: FormLine[];
 };
 
-export function OrderForm({ items, customers, initial }: { items: CatalogItem[]; customers: { id: string; name: string }[]; initial?: OrderFormInitial }) {
+export function OrderForm({ items, customers, initial, customersEnabled = false }: { items: CatalogItem[]; customers: { id: string; name: string }[]; initial?: OrderFormInitial; customersEnabled?: boolean }) {
   const [channel, setChannel] = useState<Channel>(initial?.channel ?? "TABLE");
   const [summary, setSummary] = useState({ total: 0, count: 0 });
   const onChange = useCallback((s: { total: number; count: number }) => setSummary(s), []);
@@ -52,7 +52,7 @@ export function OrderForm({ items, customers, initial }: { items: CatalogItem[];
         {channel === "COUNTER" && <TextField name="customerName" label="Nome (opcional)" defaultValue={initial?.customerName} maxLength={80} placeholder="Para chamar o cliente" />}
         {away && (
           <>
-            <SelectField name="customerId" label="Cliente cadastrado (opcional)" defaultValue={initial?.customerId ?? ""} placeholder="Novo / não cadastrado" options={customers.map((c) => ({ value: c.id, label: c.name }))} />
+            {customersEnabled && <SelectField name="customerId" label="Cliente cadastrado (opcional)" defaultValue={initial?.customerId ?? ""} placeholder="Novo / não cadastrado" options={customers.map((c) => ({ value: c.id, label: c.name }))} />}
             <TextField name="customerName" label="Nome do cliente" defaultValue={initial?.customerName} required maxLength={80} />
             <TextField name="phone" label="Telefone / WhatsApp" type="tel" inputMode="tel" defaultValue={initial?.phone} maxLength={30} />
             {channel === "DELIVERY" && <TextField name="address" label="Endereço de entrega" defaultValue={initial?.address} required maxLength={200} span={2} />}

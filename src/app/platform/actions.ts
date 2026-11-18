@@ -12,7 +12,7 @@ import { passwordError } from "@/lib/rules/password";
 import { platformAdminChangeError } from "@/lib/rules/users";
 import { withinLimit } from "@/lib/rate-limit";
 import { dateOnly, formatDate } from "@/lib/dates";
-import { MODULE_KEYS, moduleLabel } from "@/lib/modules";
+import { FEATURES, FEATURE_KEYS, MODULE_KEYS, moduleLabel } from "@/lib/modules";
 
 export async function platformLoginAction(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(z.object({ email: z.string().trim().min(1, "Informe o e-mail").max(200), password: z.string().min(1, "Informe a senha").max(200) }), formData);
@@ -158,5 +158,23 @@ export async function updatePlatformProfileAction(_: FormState, formData: FormDa
     const changes = [row.name !== name ? "nome" : null, row.email !== newEmail ? "e-mail" : null].filter(Boolean).join(" e ");
     await recordPlatformEvent({ id: admin.id, name }, "perfil_alterado", `Alterou o próprio ${changes}`, { de: { nome: row.name, email: row.email }, para: { nome: name, email: newEmail } });
     return { success: "Dados atualizados. No próximo login use o e-mail novo." };
+  });
+}
+
+/** Liga ou desliga recursos opcionais (ex.: cadastro de clientes). */
+export async function setFeaturesAction(_: FormState, formData: FormData): Promise<FormState> {
+  return runPlatformAction(formData, async (admin) => {
+    const enabled = FEATURE_KEYS.filter((k) => formData.get(`feat_${k}`) === "on");
+    const before = await db.systemSettings.findUnique({ where: { id: "singleton" } });
+    const was = Array.isArray(before?.enabledFeatures) ? (before.enabledFeatures as string[]) : [];
+    await db.systemSettings.update({ where: { id: "singleton" }, data: { enabledFeatures: enabled } });
+    clearSettingsCache();
+    const label = (k: string) => FEATURES.find((f) => f.key === k)?.label ?? k;
+    const added = enabled.filter((k) => !was.includes(k)).map(label);
+    const removed = was.filter((k) => !(enabled as string[]).includes(k)).map(label);
+    if (added.length || removed.length) {
+      await recordPlatformEvent(admin, "recursos", `Recursos alterados${added.length ? ` · ligou: ${added.join(", ")}` : ""}${removed.length ? ` · desligou: ${removed.join(", ")}` : ""}`, { ligados: enabled });
+    }
+    return { success: "Recursos atualizados." };
   });
 }

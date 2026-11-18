@@ -29,10 +29,12 @@ export type EntryFormProps = {
   };
   initialKind: "INCOME" | "EXPENSE";
   today: string;
+  /** Recurso opcional "Clientes" ligado no console. */
+  customersEnabled?: boolean;
 };
 
 /** Lançamento rápido: tipo, valor, descrição e categoria; o resto é opcional. */
-export function EntryForm({ categories, methods, suppliers, customers, initial, initialKind, today }: EntryFormProps) {
+export function EntryForm({ categories, methods, suppliers, customers, initial, initialKind, today, customersEnabled = false }: EntryFormProps) {
   const [kind, setKind] = useState<"INCOME" | "EXPENSE">(initial?.kind ?? initialKind);
   const [paid, setPaid] = useState(initial?.paid ?? true);
   const options = useMemo(() => categories.filter((c) => c.kind === kind).map((c) => ({ value: c.id, label: c.name })), [categories, kind]);
@@ -69,9 +71,9 @@ export function EntryForm({ categories, methods, suppliers, customers, initial, 
         <TextField name="description" label="Descrição" defaultValue={initial?.description} placeholder={income ? "Ex.: Evento da Maria" : "Ex.: Conta de luz"} required span={2} maxLength={120} />
         <SelectField name="categoryId" label="Categoria" options={options} defaultValue={initial?.categoryId} placeholder="Escolha…" required key={kind} />
         <SelectField name="paymentMethodId" label="Forma de pagamento" options={methods.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.paymentMethodId ?? ""} placeholder="Não informar" />
-        {income ? (
+        {income ? (customersEnabled ? (
           <SelectField name="customerId" label="Cliente (opcional)" options={customers.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.customerId ?? ""} placeholder="Não informar" />
-        ) : (
+        ) : <div className="hidden sm:block" />) : (
           <SelectField name="supplierId" label="Fornecedor (opcional)" options={suppliers.map((m) => ({ value: m.id, label: m.name }))} defaultValue={initial?.supplierId ?? ""} placeholder="Não informar" />
         )}
         <div className="self-end">

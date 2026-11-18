@@ -3,8 +3,8 @@
 import { db } from "@/lib/db";
 import { formatDate, todayString, dateOnlyToString } from "@/lib/dates";
 import {
-  DEFAULT_ENABLED_MODULES, levelFor, parseEnabledModules,
-  type Access, type Level, type ModuleKey,
+  DEFAULT_ENABLED_FEATURES, DEFAULT_ENABLED_MODULES, levelFor, parseEnabledFeatures, parseEnabledModules,
+  type Access, type FeatureKey, type Level, type ModuleKey,
 } from "@/lib/modules";
 import type { SessionUser } from "@/lib/session-store";
 
@@ -17,6 +17,8 @@ export type SettingsSnapshot = {
   expiresOn: string | null;
   expired: boolean;
   enabled: ModuleKey[];
+  /** Recursos opcionais ligados (ex.: CLIENTES). */
+  features: FeatureKey[];
 };
 
 const TTL_MS = 3000;
@@ -43,6 +45,7 @@ export async function loadSettings(now = new Date()): Promise<SettingsSnapshot> 
     expiresOn,
     expired,
     enabled: s ? parseEnabledModules(s.enabledModules) : DEFAULT_ENABLED_MODULES,
+    features: s ? parseEnabledFeatures(s.enabledFeatures) : DEFAULT_ENABLED_FEATURES,
   };
   cache = { at: now.getTime(), value };
   return value;

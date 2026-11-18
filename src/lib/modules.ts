@@ -9,6 +9,22 @@ export const MODULES = [
   { key: "CADASTROS", label: "Cadastros", description: "Itens (compra e venda), categorias financeiras, formas de pagamento, fornecedores e clientes.", paths: ["/cadastros"] },
 ] as const;
 
+/**
+ * Recursos opcionais: partes de um módulo que o fornecedor liga ou desliga no console.
+ * Desligados, somem do menu e das telas que dependem deles. Começam desligados.
+ */
+export const FEATURES = [
+  { key: "CLIENTES", label: "Cadastro de clientes", module: "CADASTROS", description: "Aba Clientes em Cadastros e a escolha de cliente em pedidos de entrega/encomenda e receitas. Desligado, o nome do cliente do pedido continua sendo digitado." },
+] as const;
+
+export type FeatureKey = (typeof FEATURES)[number]["key"];
+export const FEATURE_KEYS = FEATURES.map((f) => f.key) as FeatureKey[];
+export const DEFAULT_ENABLED_FEATURES: FeatureKey[] = [];
+
+export function parseEnabledFeatures(value: unknown): FeatureKey[] {
+  return Array.isArray(value) ? FEATURE_KEYS.filter((k) => value.includes(k)) : [];
+}
+
 export type ModuleKey = (typeof MODULES)[number]["key"];
 export type Level = "NONE" | "VIEW" | "EDIT";
 export type Permissions = Partial<Record<ModuleKey, Level>>;

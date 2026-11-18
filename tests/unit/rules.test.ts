@@ -130,3 +130,12 @@ describe("módulos e permissões", () => {
     expect(parsePermissions(null)).toEqual({});
   });
 });
+
+import { parseEnabledFeatures } from "@/lib/modules";
+describe("recursos opcionais", () => {
+  it("começam desligados e ignoram valores desconhecidos", () => {
+    expect(parseEnabledFeatures([])).toEqual([]);
+    expect(parseEnabledFeatures(null)).toEqual([]);
+    expect(parseEnabledFeatures(["CLIENTES", "XYZ"])).toEqual(["CLIENTES"]);
+  });
+});

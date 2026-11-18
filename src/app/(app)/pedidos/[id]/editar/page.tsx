@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireModule } from "@/lib/auth";
 import { catalogItems } from "@/lib/catalog";
+import { featureOn } from "@/lib/features";
 import { localParts } from "@/lib/dates";
 import { qtyToInput } from "@/lib/money";
 import { orderTitle } from "@/lib/order-utils";
@@ -20,9 +21,10 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
   if (!order) notFound();
   if (order.status !== "OPEN") redirect(`/pedidos/${id}`);
 
+  const customersEnabled = await featureOn("CLIENTES");
   const [items, customers] = await Promise.all([
     catalogItems({ sellable: true }),
-    db.customer.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    customersEnabled ? db.customer.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
   ]);
   // itens do pedido que saíram de venda continuam disponíveis para edição
   const known = new Set(items.map((i) => i.id));
@@ -38,7 +40,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
       <PageHeader title="Editar pedido" description={orderTitle(order)} back={{ href: `/pedidos/${id}`, label: "Pedido" }} />
       <div className="max-w-5xl">
         <OrderForm
-          items={items} customers={customers}
+          items={items} customers={customers} customersEnabled={customersEnabled}
           initial={{
             id: order.id, channel: order.channel, tableLabel: order.tableLabel ?? "", customerId: order.customerId ?? "",
             customerName: order.customerName ?? "", phone: order.phone ?? "", address: order.address ?? "",

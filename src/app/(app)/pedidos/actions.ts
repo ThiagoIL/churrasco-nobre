@@ -11,6 +11,7 @@ import { dateOnly, todayString, zoned } from "@/lib/dates";
 import { moveStock } from "@/lib/stock-service";
 import { SYSTEM_CATEGORIES } from "@/lib/system-categories";
 import { orderWho } from "@/lib/order-utils";
+import { featureOn } from "@/lib/features";
 
 const orderSchema = z.object({
   id: optionalUuid(),
@@ -41,7 +42,8 @@ export async function saveOrderAction(_: FormState, formData: FormData): Promise
 
     let customerName = d.customerName;
     let phone = d.phone;
-    if (d.customerId) {
+    const customersOn = await featureOn("CLIENTES");
+    if (d.customerId && customersOn) {
       const customer = await db.customer.findUnique({ where: { id: d.customerId } });
       if (!customer) throw new UserError("Cliente não encontrado.");
       customerName ||= customer.name;
@@ -67,7 +69,7 @@ export async function saveOrderAction(_: FormState, formData: FormData): Promise
     const header = {
       channel: d.channel,
       tableLabel: d.channel === "TABLE" ? d.tableLabel : d.tableLabel,
-      customerId: d.customerId,
+      customerId: d.customerId && customersOn ? d.customerId : null,
       customerName,
       phone,
       address: d.channel === "DELIVERY" ? d.address : d.address,

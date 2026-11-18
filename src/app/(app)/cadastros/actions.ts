@@ -8,6 +8,7 @@ import {
   UserError, checkbox, optional, optionalMoney, optionalQuantity, optionalUuid, parseForm, required, requiredEnum, uuid, type FormState,
 } from "@/lib/form";
 import { moveStock } from "@/lib/stock-service";
+import { featureOn } from "@/lib/features";
 
 const ENTITY_LABELS = { categoria: "categoria", pagamento: "forma de pagamento", fornecedor: "fornecedor", cliente: "cliente", item: "item" } as const;
 
@@ -74,6 +75,7 @@ export async function saveSupplierAction(_: FormState, formData: FormData): Prom
 
 export async function saveCustomerAction(_: FormState, formData: FormData): Promise<FormState> {
   return runAction("CADASTROS", formData, async (user) => {
+    if (!(await featureOn("CLIENTES"))) throw new UserError("O cadastro de clientes não está liberado neste sistema.");
     const parsed = parseForm(z.object({ id: optionalUuid(), name: required("Nome", 120), phone: optional(30), note: optional(300) }), formData);
     if (parsed.state) return parsed.state;
     const { id, ...data } = parsed.data;

@@ -35,7 +35,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const today = todayString();
   const date = dateOnlyToString(entry.date);
   const editable = canEdit && entry.source === "MANUAL" && entry.status !== "CANCELED";
-  const { categories, methods, suppliers, customers } = await selectOptions();
+  const { categories, methods, suppliers, customers, customersEnabled } = await selectOptions();
 
   return (
     <>
@@ -50,7 +50,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           {editable ? (
             <Card title="Editar lançamento">
               <EntryForm
-                categories={categories} methods={methods} suppliers={suppliers} customers={customers}
+                categories={categories} methods={methods} suppliers={suppliers} customers={customers} customersEnabled={customersEnabled}
                 initialKind={entry.kind} today={today}
                 initial={{
                   id: entry.id, kind: entry.kind, amount: centsToInput(entry.amountCents), description: entry.description,
