@@ -85,14 +85,17 @@ export function LineBuilder({
 
       {/* busca e grupos */}
       <div className="space-y-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input
-            type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar item…" aria-label="Buscar item"
-            autoComplete="off" enterKeyHint="search" className="input pl-9"
-            onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
-          />
-        </div>
+        {/* no pedido o cardápio é curto e os grupos bastam: sem campo de busca */}
+        {mode !== "order" && (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <input
+              type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar item…" aria-label="Buscar item"
+              autoComplete="off" enterKeyHint="search" className="input pl-9"
+              onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+            />
+          </div>
+        )}
         {groups.length > 1 && (
           <div className="scroll-x -mx-4 flex gap-2 px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Grupos">
             <button type="button" className="chip shrink-0" aria-current={group === "" ? "true" : undefined} onClick={() => setGroup("")}>Todos</button>
